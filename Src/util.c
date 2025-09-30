@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h> // for abs()
 #include <string.h>
+#include <math.h>   // for fmod()
 #include "stm32f1xx_hal.h"
 #include "defines.h"
 #include "setup.h"
@@ -500,98 +501,98 @@ void Encoder_Init(void) {
 
 
 
-// Start non-blocking encoder alignment sequence
+// Start non-blocking encoder alignment sequence with direct electrical angle rotation
 void Encoder_Align_Start(void) {
     if (encoder.align_state != 0) {
         return; // Alignment already in progress
     }
     
-    enable = 1  ;
-    rtP_Left.b_diagEna        = 1; // Disable diagnostics during alignment
-    rtP_Left.b_angleMeasEna       = 0;
+    enable = 1;
+    rtP_Left.b_diagEna = 1; // Disable diagnostics during alignment
+    rtP_Left.b_angleMeasEna = 0;
     encoder.align_state = 1; // Start alignment sequence
     encoder.align_timer = 0;
     encoder.align_start_time = buzzerTimer;
     encoder.align_step_counter = 0;
-    encoder.align_sequence_step = 0;
     encoder.align_ini_pos = encoder_handle.Instance->CNT;
+    
+    // Initialize direct electrical angle rotation variables
+    encoder.elec_angle_fixdt = 0; // Start at 0 degrees electrical
+    encoder.rotation_count = 0;
+    encoder.angle_step_timer = buzzerTimer;
+    // Calculate angle increment for smooth rotation over 3 seconds
+    // 7 rotations * 360 degrees = 2520 degrees total
+    // 3000ms total time, called every ~1ms (main loop frequency)
+    encoder.angle_increment = 2520.0f / 3000.0f; // degrees per millisecond
+    
     // Set motor to open loop mode
     ctrlModReq = 1;
     ctrlModReqRaw = ctrlModReq;
     rtP_Left.z_ctrlTypSel = 0;
-    encoder.align_inpTgt = ALIGNMENT_VOLTAGE; 
+    encoder.align_inpTgt = ALIGNMENT_VOLTAGE;
 }
 
-// Non-blocking encoder alignment state machine - call from main loop
+// Non-blocking encoder alignment with direct electrical angle rotation - call from main loop
 void Encoder_Align(void) {
     if (encoder.align_state == 0) {
         return; // No alignment in progress
     }
     
-    // Hall sensor sequence for stepping through z_pos 0-5
-    static const uint8_t hall_sequence[6][3] = {
-        {0,1,0}, // Hall = 1 -> z_pos = 2 (step 0)
-        {0,1,1}, // Hall = 3 -> z_pos = 1 (step 1)
-        {0,0,1}, // Hall = 2 -> z_pos = 2 (step 2)  
-        {1,0,1}, // Hall = 6 -> z_pos = 5 (step 3)
-        {1,0,0}, // Hall = 4 -> z_pos = 4 (step 4)
-        {1,1,0}  // Hall = 5 -> z_pos = 3 (step 5)
-
-    };
-    
     uint32_t current_time = buzzerTimer;
+    uint32_t elapsed_time = current_time - encoder.align_start_time;
     
     switch (encoder.align_state) {
-        case 1: // Alignment sequence - move through hall positions
-            
-            if ((current_time - encoder.align_timer) >= 500) {
+        case 1: // Direct electrical angle rotation - 7 rotations in 3 seconds
+            if (elapsed_time < 3000) { // 3000ms = 3 seconds
+                // Calculate current electrical angle based on elapsed time
+                float total_angle = encoder.angle_increment * elapsed_time;
+                float current_elec_angle = fmod(total_angle, 360.0f); // Keep angle 0-359.99
+                
+                // Convert to fixdt(1,16,4) format (scaled by 16)
+                encoder.elec_angle_fixdt = (int16_T)(current_elec_angle * 16.0f);
+                
+                // Directly set the electrical angle input instead of using hall sequence
+                // Bypass hall sensors and use direct angle control
+                rtU_Left.a_elecAngle = encoder.elec_angle_fixdt;
+                
+                // Force angle measurement to use our direct input
+                rtP_Left.b_angleMeasEna = 1; // Enable angle measurement
+                
+            } else {
+                // 3 seconds completed, move to final positioning
+                encoder.align_state = 2;
                 encoder.align_timer = current_time;
-                encoder.align_sequence_step = (encoder.align_step_counter / 10) % 6;
-                
-                hall_ul = hall_sequence[encoder.align_sequence_step][0];
-                hall_vl = hall_sequence[encoder.align_sequence_step][1];
-                hall_wl = hall_sequence[encoder.align_sequence_step][2];
-                
-                encoder.align_step_counter++;
-                
-                
-                if (encoder.align_step_counter >= 350) {
-                    encoder.align_state = 2; 
-                    encoder.align_timer = current_time;
-                }
+                // Set to 0 degrees electrical angle
+                encoder.elec_angle_fixdt = 0;
+                rtU_Left.a_elecAngle = 0;
             }
             break;
             
-        case 2: 
-            if ((current_time - encoder.align_timer) >= 8000) { // 500ms * 16 ticks/ms
+        case 2: // Hold at 0 degrees electrical for final measurement
+            if ((current_time - encoder.align_timer) >= 500) { // 500ms settling time
                 encoder.align_state = 3; // Move to calculation phase
             }
+            // Keep at 0 degrees electrical
+            rtU_Left.a_elecAngle = 0;
             break;
 
         case 3: // Calculate alignment and finish
             // Stop motor
+            encoder.align_inpTgt = 0;
             
-            encoder.align_inpTgt = 0; // Aligment Power
-            
-            // Calculate offset
+            // Calculate offset - encoder should now be at 0 electrical degrees
             encoder.offset = encoder_handle.Instance->CNT;
             
-            // Determine direction
-            int32_t encoder_movement = encoder.align_ini_pos - encoder.offset;
-            // Handle encoder wraparound
-            if (encoder_movement > (ENCODER_CPR / 2)) {
-                encoder_movement -= ENCODER_CPR;
-            } else if (encoder_movement < -(ENCODER_CPR / 2)) {
-                encoder_movement += ENCODER_CPR;
-            }
+            // Option 1: Set counter offset so mechanical angle reads 0
+            // The current encoder count represents 0 electrical degrees
+            // No additional offset calculation needed as we ended at known electrical position
             
-            // Determine direction: 1 if positive movement (CW), 0 if negative (CCW)
-            encoder.direction = (encoder_movement > 0) ? 1 : 0;
+            // Option 2: Set encoder counter directly to 0 (alternative approach)
+            // encoder_handle.Instance->CNT = 0;
+            // encoder.offset = 0;
             
-            // Calculate 30 electrical degrees offset (30° * pole_pairs / 360° * ENCODER_CPR)
-            // Assuming 15 pole pairs (30 poles), 30° elec = 2° mechanical
-            int32_t offset_30_elec = (2 * ENCODER_CPR) / 360;
-            encoder.offset = encoder.offset - offset_30_elec;
+            // Determine direction based on last rotation direction (assume forward)
+            encoder.direction = 1; // Assume CW rotation during alignment
             
             // Mark alignment complete
             encoder.ali = true;

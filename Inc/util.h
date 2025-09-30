@@ -84,6 +84,11 @@ typedef struct {
   uint16_t align_step_counter;// Step counter for alignment sequence
   int32_t align_ini_pos;      // Initial encoder position before alignment
   uint8_t align_sequence_step;// Current step in hall sequence
+  // Direct electrical angle rotation variables
+  int16_T elec_angle_fixdt;   // Current electrical angle in fixdt(1,16,4) format (scaled by 16)
+  uint8_t rotation_count;     // Number of complete rotations completed (0-7)
+  uint32_t angle_step_timer;  // Timer for angle stepping
+  float angle_increment;      // Angle increment per step for smooth rotation
 } SensorState;
 extern SensorState encoder;
     uint8_t hall_ul;
