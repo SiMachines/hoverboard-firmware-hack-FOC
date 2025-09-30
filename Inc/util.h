@@ -84,6 +84,10 @@ typedef struct {
   uint16_t align_step_counter;// Step counter for alignment sequence
   int32_t align_ini_pos;      // Initial encoder position before alignment
   uint8_t align_sequence_step;// Current step in hall sequence
+  // Smooth ramping variables
+  uint32_t ramp_timer;        // Timer for power ramping
+  int16_t ramp_target;        // Target power for current step
+  uint32_t step_start_time;   // Time when current step started
 } SensorState;
 extern SensorState encoder;
     uint8_t hall_ul;

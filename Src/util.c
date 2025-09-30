@@ -515,14 +515,18 @@ void Encoder_Align_Start(void) {
     encoder.align_step_counter = 0;
     encoder.align_sequence_step = 0;
     encoder.align_ini_pos = encoder_handle.Instance->CNT;
+    // Initialize ramping variables
+    encoder.ramp_timer = 0;
+    encoder.ramp_target = ALIGNMENT_VOLTAGE;
+    encoder.step_start_time = buzzerTimer;
     // Set motor to open loop mode
     ctrlModReq = 1;
     ctrlModReqRaw = ctrlModReq;
     rtP_Left.z_ctrlTypSel = 0;
-    encoder.align_inpTgt = ALIGNMENT_VOLTAGE; 
+    encoder.align_inpTgt = 0; // Start with 0 power, will ramp up
 }
 
-// Non-blocking encoder alignment state machine - call from main loop
+// Non-blocking encoder alignment state machine with smooth ramping - call from main loop
 void Encoder_Align(void) {
     if (encoder.align_state == 0) {
         return; // No alignment in progress
@@ -536,42 +540,56 @@ void Encoder_Align(void) {
         {1,0,1}, // Hall = 6 -> z_pos = 5 (step 3)
         {1,0,0}, // Hall = 4 -> z_pos = 4 (step 4)
         {1,1,0}  // Hall = 5 -> z_pos = 3 (step 5)
-
     };
     
     uint32_t current_time = buzzerTimer;
+    const uint32_t RAMP_TIME = 100; // 100ms ramp time for each step transition
     
     switch (encoder.align_state) {
-        case 1: // Alignment sequence - move through hall positions
-            
-            if ((current_time - encoder.align_timer) >= 500) {
+        case 1: // Alignment sequence - move through hall positions with smooth ramping
+            // Check if it's time to change hall sequence step
+            if ((current_time - encoder.align_timer) >= 1000) {
                 encoder.align_timer = current_time;
                 encoder.align_sequence_step = (encoder.align_step_counter / 10) % 6;
                 
+                // Update hall sequence
                 hall_ul = hall_sequence[encoder.align_sequence_step][0];
                 hall_vl = hall_sequence[encoder.align_sequence_step][1];
                 hall_wl = hall_sequence[encoder.align_sequence_step][2];
                 
-                encoder.align_step_counter++;
+                // Reset power to 0 and start ramping up
+                encoder.align_inpTgt = 0;
+                encoder.step_start_time = current_time;
+                encoder.ramp_timer = current_time;
                 
+                encoder.align_step_counter++;
                 
                 if (encoder.align_step_counter >= 350) {
                     encoder.align_state = 2; 
                     encoder.align_timer = current_time;
                 }
             }
+            
+            // Smooth power ramping within each step
+            uint32_t time_in_step = current_time - encoder.step_start_time;
+            if (time_in_step < RAMP_TIME) {
+                // Linear ramp from 0 to target power over RAMP_TIME
+                encoder.align_inpTgt = (int16_t)((encoder.ramp_target * time_in_step) / RAMP_TIME);
+            } else {
+                // Maintain target power
+                encoder.align_inpTgt = encoder.ramp_target;
+            }
             break;
             
-        case 2: 
-            if ((current_time - encoder.align_timer) >= 8000) { // 500ms * 16 ticks/ms
+        case 2: // Hold final position
+            if ((current_time - encoder.align_timer) >= 16000) { // 500ms * 16 ticks/ms
                 encoder.align_state = 3; // Move to calculation phase
             }
             break;
 
         case 3: // Calculate alignment and finish
-            // Stop motor
-            
-            encoder.align_inpTgt = 0; // Aligment Power
+            // Stop motor smoothly
+            encoder.align_inpTgt = 0;
             
             // Calculate offset
             encoder.offset = encoder_handle.Instance->CNT;
