@@ -72,7 +72,7 @@ typedef struct {
   boolean_T ini;
   boolean_T ali;
   int32_t offset;
-  uint8_t direction; // 1 = CW, 0 = CCW
+  boolean_T direction; // 1 = CW, 0 = CCW
   int32_t current_count;
   int32_t aligned_count;
   int32_t mech_angle_deg;

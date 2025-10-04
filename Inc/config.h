@@ -145,13 +145,13 @@
 #define TRQ_MODE        3               // [-] TORQUE mode
 
 // Enable/Disable Motor
-#define MOTOR_LEFT_ENA                  // [-] Enable LEFT motor.  Comment-out if this motor is not needed to be operational
-//#define MOTOR_RIGHT_ENA                 // [-] Enable RIGHT motor. Comment-out if this motor is not needed to be operational
+//#define MOTOR_LEFT_ENA                  // [-] Enable LEFT motor.  Comment-out if this motor is not needed to be operational
+#define MOTOR_RIGHT_ENA                 // [-] Enable RIGHT motor. Comment-out if this motor is not needed to be operational
 
 // Control selections
 #define CTRL_TYP_SEL    FOC_CTRL        // [-] Control type selection: COM_CTRL, SIN_CTRL, FOC_CTRL (default)
 #define CTRL_MOD_REQ    TRQ_MODE        // [-] Control mode request: OPEN_MODE, VLT_MODE (default), SPD_MODE, TRQ_MODE. Note: SPD_MODE and TRQ_MODE are only available for CTRL_FOC!
-#define DIAG_ENA        1               // [-] Motor Diagnostics enable flag: 0 = Disabled, 1 = Enabled (default)
+#define DIAG_ENA        0              // [-] Motor Diagnostics enable flag: 0 = Disabled, 1 = Enabled (default)
 
 // Limitation settings
 #define I_MOT_MAX       15              // [A] Maximum single motor current limit
@@ -648,8 +648,8 @@
 #define ENCODER_TIMER    TIM4
 #define ENCODER_CHA_PORT GPIOB
 #define ENCODER_CHB_PORT GPIOB
-#define ENCODER_CHA_PIN  GPIO_PIN_6
-#define ENCODER_CHB_PIN  GPIO_PIN_7
+#define ENCODER_CHA_PIN  GPIO_PIN_7
+#define ENCODER_CHB_PIN  GPIO_PIN_6
 #define ALIGNMENT_VOLTAGE       200      // [-] Voltage used for sensor alignment. [-1000, 1000]
 #endif
   #define FLASH_WRITE_KEY     0x1011    // Flash memory writing key.
@@ -658,11 +658,11 @@
   #define CTRL_TYP_SEL        FOC_CTRL 
   #define CTRL_MOD_REQ        TRQ_MODE  
   
-  #define TANK_STEERING  
-  #define MOTOR_LEFT_ENA                  // [-] Enable LEFT motor.  Comment-out if this motor is not needed to be operational
-//#define MOTOR_RIGHT_ENA                 // [-] Enable RIGHT motor. Comment-out if this motor is not needed to be operational
+  //#define TANK_STEERING  
+  //#define MOTOR_LEFT_ENA                  // [-] Enable LEFT motor.  Comment-out if this motor is not needed to be operational
+#define MOTOR_RIGHT_ENA                 // [-] Enable RIGHT motor. Comment-out if this motor is not needed to be operational
 #undef  DIAG_ENA 
-#define DIAG_ENA        1               // [-] Motor Diagnostics enable flag: 0 = Disabled, 1 = Enabled (default)
+#define DIAG_ENA        0               // [-] Motor Diagnostics enable flag: 0 = Disabled, 1 = Enabled (default)
 #undef  INACTIVITY_TIMEOUT
 #define INACTIVITY_TIMEOUT        100
 // Limitation settings
@@ -671,9 +671,9 @@
 #define N_MOT_MAX       1000            // [rpm] Maximum motor speed limit
 
 #define FIELD_WEAK_ENA  0   
-#define CONTROL_PWM_LEFT   0         // Using PWM for input
-//#define CONTROL_SERIAL_USART3  0    // left sensor board cable, disable if ADC or PPM is used! For Arduino control check the hoverSerial.ino
-//#define FEEDBACK_SERIAL_USART3      // left sensor board cable, disable if ADC or PPM is used!
+//#define CONTROL_PWM_LEFT   0         // Using PWM for input
+#define CONTROL_SERIAL_USART3  0    // left sensor board cable, disable if ADC or PPM is used! For Arduino control check the hoverSerial.ino
+#define FEEDBACK_SERIAL_USART3      // left sensor board cable, disable if ADC or PPM is used!
   #define PRI_INPUT1          0, -1000, 0, 1000,   0    
   #define PRI_INPUT2          1, -1000, 0, 1000, 100   
 
@@ -682,6 +682,7 @@
   //#define INVERT_R_DIRECTION
   //#define INVERT_L_DIRECTION
   //#define DEBUG_SERIAL_USART3         // left sensor cable debug
+ 
   
   
 #endif

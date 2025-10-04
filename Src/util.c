@@ -505,6 +505,7 @@ void Encoder_Align_Start(void) {
     
     enable = 1;
     rtP_Left.b_diagEna = 0; // Disable diagnostics during alignment
+    rtP_Right.b_diagEna = 0; // Disable diagnostics during alignment
     encoder.align_state = 1; // Start alignment sequence
     encoder.align_timer = 0;
     encoder.align_start_time = buzzerTimer;
@@ -521,7 +522,7 @@ void Encoder_Align_Start(void) {
   // Increment per tick = (0.3504 * ENCODER_CPR) / 48000
   // Store as per-tick * 1000 for precision: (0.3504 * ENCODER_CPR * 1000) / 48000
   // Using integer math: (3504 * ENCODER_CPR * 1000) / (10000 * 48000) = (3504 * ENCODER_CPR) / 480000
-  encoder.count_increment_x1000 = (int32_t)((((int64_t)ENCODER_CPR) * 3430) / 480000);
+     encoder.count_increment_x1000 = (int32_t)((((int64_t)280) * ENCODER_CPR) / 48000);
     
     
     encoder.align_inpTgt = 0; // Start with 0 power, will ramp up
@@ -545,19 +546,19 @@ void Encoder_Align(void) {
             
         case 1: // Rotation phase - 5.167 electrical rotations in 3 seconds, end at 0° electrical
             // Smooth deceleration in last 500ms to prevent sudden stop
-            if (ramp_ticks < T_MS(500)) {
+            if (ramp_ticks < T_MS(250)) {
                 // Linear ramp: target = (ALIGNMENT_VOLTAGE * ramp_ticks) / T_MS(500)
-                encoder.align_inpTgt = (int16_t)((ALIGNMENT_VOLTAGE * ramp_ticks) / T_MS(500));
-            } else if (elapsed_ticks < T_MS(2500)) {
-                // Full speed rotation for first 2.5 seconds
+                encoder.align_inpTgt = (int16_t)((ALIGNMENT_VOLTAGE * ramp_ticks) / T_MS(250));
+            } else if (elapsed_ticks < T_MS(1250)) {
+                // Full speed rotation for first 1 seconds
                 encoder.align_inpTgt = ALIGNMENT_VOLTAGE;
-            } else if (elapsed_ticks < T_MS(3000)) {
-                // Smooth deceleration over last 500ms
-                uint32_t decel_ticks = elapsed_ticks - T_MS(2500);
-                encoder.align_inpTgt = (int16_t)(ALIGNMENT_VOLTAGE - (ALIGNMENT_VOLTAGE * decel_ticks) / T_MS(500));
+            } else if (elapsed_ticks < T_MS(1500)) {
+                // Smooth deceleration over last 250ms
+                uint32_t decel_ticks = elapsed_ticks - T_MS(1250);
+                encoder.align_inpTgt = (int16_t)(ALIGNMENT_VOLTAGE - (ALIGNMENT_VOLTAGE * decel_ticks) / T_MS(250));
             }
             
-            if (elapsed_ticks < T_MS(3000)) {
+            if (elapsed_ticks < T_MS(1500)) {
                 // Calculate simulated position increment
                 // count_increment_x1000 is per tick * 1000
                 int32_t total_increment = (int32_t)(((int64_t)encoder.count_increment_x1000 * (int64_t)elapsed_ticks) / 1000);
@@ -587,9 +588,9 @@ void Encoder_Align(void) {
             
         case 3: // High power phase - double current slowly in 500ms, hold 500ms, then measure
             // Calculate power ramp time for this phase
-      if (ramp_ticks < T_MS(500)) {
+      if (ramp_ticks < T_MS(250)) {
                 // Ramp from ALIGNMENT_VOLTAGE to 2*ALIGNMENT_VOLTAGE over 500ms
-        int16_t power_increase = (int16_t)((ALIGNMENT_VOLTAGE * ramp_ticks) / T_MS(250));
+        int16_t power_increase = (int16_t)((ALIGNMENT_VOLTAGE * ramp_ticks) / T_MS(125));
                 encoder.align_inpTgt = power_increase;
       } else if (ramp_ticks < T_MS(1000)) {
         // Hold at double power for another 500ms
@@ -599,15 +600,22 @@ void Encoder_Align(void) {
         int32_t final_real_count = encoder_handle.Instance->CNT;
         encoder.align_inpTgt = 0;
                 
+                // Determine direction based on encoder movement during alignment
+                int encoder_movement = encoder.align_ini_pos - final_real_count;
+                  //if (encoder_movement > (ENCODER_CPR/2)) encoder_movement -= (ENCODER_CPR);
+                 // if (encoder_movement < -(ENCODER_CPR/2)) encoder_movement += (ENCODER_CPR);
+                // Determine direction: 1 if positive movement (CW), 0 if negative (CCW)
+                encoder.direction = (encoder_movement > 0) ? 1 : 0;
+    
                 // Calculate offset: difference between simulated and real position
-                encoder.offset = encoder.simulated_mech_count - final_real_count;
+                //encoder.offset = encoder.simulated_mech_count - final_real_count;
+               // if (encoder.offset > (ENCODER_CPR/2)) encoder.offset -= (ENCODER_CPR);
+               // if (encoder.offset < -(ENCODER_CPR/2)) encoder.offset += (ENCODER_CPR);
                 
-                // Handle wraparound for offset calculation
-                if (encoder.offset > (ENCODER_CPR / 2)) {
-                    encoder.offset -= ENCODER_CPR;
-                } else if (encoder.offset < -(ENCODER_CPR / 2)) {
-                    encoder.offset += ENCODER_CPR;
-                }
+
+                __HAL_TIM_SET_COUNTER(&encoder_handle, encoder_handle.Instance->CNT+encoder.offset);
+
+
                 /* 
                 // ERROR CHECKING: Verify alignment accuracy in electrical degrees
                 int32_t counts_per_elec_cycle = ENCODER_CPR / 15; // Counts per electrical rotation (360° elec)
@@ -644,17 +652,6 @@ void Encoder_Align(void) {
                   encoder.ali = true;
                 }
                 */
-                // Determine direction based on encoder movement during alignment
-                int32_t encoder_movement = encoder.align_ini_pos - final_real_count;
-                // Handle encoder wraparound
-                if (encoder_movement > (ENCODER_CPR / 2)) {
-                    encoder_movement -= ENCODER_CPR;
-                } else if (encoder_movement < -(ENCODER_CPR / 2)) {
-                    encoder_movement += ENCODER_CPR;
-                }
-                
-                // Determine direction: 1 if positive movement (CW), 0 if negative (CCW)
-                encoder.direction = (encoder_movement > 0) ? 1 : 0;
                 
                 // Mark alignment complete (even with error for now)
                 encoder.ali = true;
@@ -1133,11 +1130,15 @@ void readInputRaw(void) {
         for (uint8_t i = 0; i < (IBUS_NUM_CHANNELS * 2); i+=2) {
           ibusR_captured_value[(i/2)] = CLAMP(commandR.channels[i] + (commandR.channels[i+1] << 8) - 1000, 0, INPUT_MAX); // 1000-2000 -> 0-1000
         }
-        input1[inIdx].raw = (ibusR_captured_value[0] - 500) * 2;
-        input2[inIdx].raw = (ibusR_captured_value[1] - 500) * 2; 
+        if (inIdx < INPUTS_NR) {
+          input1[inIdx].raw = (ibusR_captured_value[0] - 500) * 2;
+          input2[inIdx].raw = (ibusR_captured_value[1] - 500) * 2; 
+        }
       #else
-        input1[inIdx].raw = commandR.steer;
-        input2[inIdx].raw = commandR.speed;
+        if (inIdx < INPUTS_NR) {
+          input1[inIdx].raw = commandR.steer;
+          input2[inIdx].raw = commandR.speed;
+        }
       #endif
     }
     #endif

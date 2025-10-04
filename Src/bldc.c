@@ -191,7 +191,7 @@ void DMA1_Channel1_IRQHandler(void) {
     rtU_Left.i_phaBC      = curL_phaB;
     rtU_Left.i_DCLink     = curL_DC;
     
-    #ifdef ENCODER 
+    #ifdef ENCODER_L 
     if (!encoder.align_state) {
       rtU_Left.r_inpTgt = pwml;
     } else {
@@ -252,17 +252,31 @@ void DMA1_Channel1_IRQHandler(void) {
     rtU_Right.i_phaAB       = curR_phaB;
     rtU_Right.i_phaBC       = curR_phaC;
     rtU_Right.i_DCLink      = curR_DC;
-  #ifdef ENCODER
-    // rtU_Right.a_mechAngle   = ...; // Angle input in DEGREES [0,360] in fixdt(1,16,4) data type. If `angle` is float use `= (int16_t)floor(angle * 16.0F)` If `angle` is integer use `= (int16_t)(angle << 4)`
+  
+
+     #ifdef ENCODER 
     if (!encoder.align_state) {
-      rtU_Right.r_inpTgt = pwmr;
+      rtU_Right.r_inpTgt = pwml-500;
     } else {
       rtU_Right.r_inpTgt = encoder.align_inpTgt;
+       simulated_mech_angle_deg = (encoder.simulated_mech_count * 3600) / (int32_t)ENCODER_CPR;
+      rtU_Right.a_mechAngle = (int16_t)((simulated_mech_angle_deg * 16) / 10);
     }
+    if (encoder.ali){
+     encoder.aligned_count = encoder_handle.Instance->CNT;
+      //encoder.aligned_count = encoder.current_count + encoder.offset;
+    if (encoder.direction == 0) {
+       encoder.aligned_count = -encoder.aligned_count;
+    }
+    encoder.aligned_count = (encoder.aligned_count % (int32_t)ENCODER_CPR + (int32_t)ENCODER_CPR) % (int32_t)ENCODER_CPR;
+    encoder.mech_angle_deg = (encoder.aligned_count * 3600) / (int32_t)ENCODER_CPR;
+    // Angle input in DEGREES [0,360] in fixdt(1,16,4) data type. If `angle` is float use `= (int16_t)floor(angle * 16.0F)` If `angle` is integer use `= (int16_t)(angle << 4)`
+    rtU_Right.a_mechAngle   = (int16_t)((encoder.mech_angle_deg * 16) / 10); 
+    } 
     #else
-      rtU_Right.r_inpTgt = pwmr;
+    rtU_Right.r_inpTgt = pwml;
+    //rtU_Right.a_mechAngle   = 0;
     #endif
-    
     
     /* Step the controller */
     #ifdef MOTOR_RIGHT_ENA
