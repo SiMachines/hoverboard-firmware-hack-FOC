@@ -57,8 +57,159 @@ extern uint8_t backwardDrive;
 extern uint8_t buzzerCount;             // global variable for the buzzer counts. can be 1, 2, 3, 4, 5, 6, 7...
 extern volatile uint32_t buzzerTimer;   // global timer variable for buzzer timing
 
-#ifdef ENCODER
-SensorState encoder = {0}; // Initialize all members to 0/false
+#if defined(ANALOG_BUTTON)
+extern ADC_HandleTypeDef hadc1;
+
+volatile uint8_t analogButtonPressed = 0;
+static volatile uint8_t analogButtonAwaitPress = 1;
+
+#if ANALOG_BUTTON_PRESSED_MIN > 4095U
+  #error "ANALOG_BUTTON_PRESSED_MIN must be <= 4095"
+#endif
+#if ANALOG_BUTTON_RELEASE_MAX > 4095U
+  #error "ANALOG_BUTTON_RELEASE_MAX must be <= 4095"
+#endif
+#if ANALOG_BUTTON_RELEASE_MAX >= ANALOG_BUTTON_PRESSED_MIN
+  #error "ANALOG_BUTTON_RELEASE_MAX must be less than ANALOG_BUTTON_PRESSED_MIN"
+#endif
+
+// Arm watchdog so a rising sample trips when the button crosses the press threshold.
+static void AnalogButton_ArmPress(void) {
+  ADC_AnalogWDGConfTypeDef config;
+  config.WatchdogMode = ADC_ANALOGWATCHDOG_SINGLE_REG;
+  config.HighThreshold = ANALOG_BUTTON_PRESSED_MIN;
+  config.LowThreshold  = 0U;
+  config.Channel       = BUTTON_ADC_CHANNEL;
+  config.ITMode        = ENABLE;
+  HAL_ADC_AnalogWDGConfig(&hadc1, &config);
+}
+
+// Arm watchdog so a falling sample trips when the button drops below the release threshold.
+static void AnalogButton_ArmRelease(void) {
+  ADC_AnalogWDGConfTypeDef config;
+  config.WatchdogMode = ADC_ANALOGWATCHDOG_SINGLE_REG;
+  config.HighThreshold = 0x0FFFU;
+  config.LowThreshold  = ANALOG_BUTTON_RELEASE_MAX;
+  config.Channel       = BUTTON_ADC_CHANNEL;
+  config.ITMode        = ENABLE;
+  HAL_ADC_AnalogWDGConfig(&hadc1, &config);
+}
+
+// Reset latched state and prime the watchdog before conversions start.
+void AnalogButton_Init(void) {
+  analogButtonPressed     = 0U;
+  analogButtonAwaitPress  = 1U;
+  __HAL_ADC_CLEAR_FLAG(&hadc1, ADC_FLAG_AWD);
+  AnalogButton_ArmPress();
+}
+
+// ISR context: latch the new state and re-arm the window for the next edge.
+void AnalogButton_HandleWatchdog(void) {
+  __HAL_ADC_CLEAR_FLAG(&hadc1, ADC_FLAG_AWD);
+  uint16_t sample = adc_buffer.adc12.value.button;
+
+  if (analogButtonAwaitPress) {
+    if (sample >= ANALOG_BUTTON_PRESSED_MIN) {
+      analogButtonPressed    = 1U;
+      analogButtonAwaitPress = 0U;
+      AnalogButton_ArmRelease();
+    } else {
+      AnalogButton_ArmPress();
+    }
+  } else {
+    if (sample <= ANALOG_BUTTON_RELEASE_MAX) {
+      analogButtonPressed    = 0U;
+      analogButtonAwaitPress = 1U;
+      AnalogButton_ArmPress();
+    } else {
+      AnalogButton_ArmRelease();
+    }
+  }
+}
+
+// HAL hook invoked from ADC1_2 IRQ; only handle events sourced by the button channel.
+void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef *hadc) {
+  if ((hadc != NULL) && (hadc == &hadc1 || hadc->Instance == hadc1.Instance)) {
+    AnalogButton_HandleWatchdog();
+  }
+}
+#endif
+
+// Shared accessor used by the rest of the firmware regardless of button mode.
+uint8_t powerButtonPressed(void) {
+#if defined(ANALOG_BUTTON)
+  return analogButtonPressed;
+#else
+  return HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN);
+#endif
+}
+
+#if defined(ENCODER_X)
+SensorState encoder_x = {0}; // Initialize all members to 0/false
+TIM_HandleTypeDef encoder_x_handle;
+#endif
+
+#if defined(ENCODER_Y)
+SensorState encoder_y = {0}; // Initialize all members to 0/false
+TIM_HandleTypeDef encoder_y_handle;
+#endif
+
+#if defined(ENCODER_X) || defined(ENCODER_Y)
+
+inline boolean_T encoder_alignment_faulted(void) {
+#if defined(ENCODER_X) && defined(ENCODER_Y)
+  return (encoder_x.align_fault != 0U) || (encoder_y.align_fault != 0U);
+#elif defined(ENCODER_X)
+  return (encoder_x.align_fault != 0U);
+#else
+  return (encoder_y.align_fault != 0U);
+#endif
+}
+
+static inline boolean_T encoder_alignment_active(void) {
+#if defined(ENCODER_X) && defined(ENCODER_Y)
+  return (encoder_x.align_state != 0U) || (encoder_y.align_state != 0U);
+#elif defined(ENCODER_X)
+  return (encoder_x.align_state != 0U);
+#else
+  return (encoder_y.align_state != 0U);
+#endif
+}
+#define ENCODER_ALIGN_ELEC_TOL_DEG 360
+
+static int32_t normalize_to_cycle(int32_t value, int32_t cycle) {
+  if (cycle <= 0) {
+    return 0;
+  }
+
+  int32_t result = value % cycle;
+  if (result < 0) {
+    result += cycle;
+  }
+
+  return result;
+}
+
+static int32_t compute_alignment_error_deg(int32_t expected_count,
+                                           int32_t actual_count,
+                                           int32_t cycle) {
+  if (cycle <= 0) {
+    return 360; //flag a fatal configuration issue
+  }
+
+  int32_t expected_elec = normalize_to_cycle(expected_count, cycle);
+  int32_t actual_elec   = normalize_to_cycle(actual_count, cycle);
+  int32_t elec_error    = actual_elec - expected_elec;
+  int32_t half_cycle    = cycle / 2;
+
+  if (elec_error > half_cycle) {
+    elec_error -= cycle;
+  } else if (elec_error < -half_cycle) {
+    elec_error += cycle;
+  }
+
+  return (elec_error * 360) / cycle;
+}
 #endif
 extern uint8_t buzzerFreq;              // global variable for the buzzer pitch. can be 1, 2, 3, 4, 5, 6, 7...
 extern uint8_t buzzerPattern;           // global variable for the buzzer pattern. can be 1, 2, 3, 4, 5, 6, 7...
@@ -69,15 +220,24 @@ extern uint8_t nunchuk_data[6];
 extern volatile uint32_t timeoutCntGen; // global counter for general timeout counter
 extern volatile uint8_t  timeoutFlgGen; // global flag for general timeout counter
 extern volatile uint32_t main_loop_counter;
+
 #if defined(CONTROL_PPM_LEFT) || defined(CONTROL_PPM_RIGHT)
 extern volatile uint16_t ppm_captured_value[PPM_NUM_CHANNELS+1];
 #endif
 
-#if defined(CONTROL_PWM_LEFT) || defined(CONTROL_PWM_RIGHT)
-extern volatile uint16_t pwm_captured_ch1_value;
-extern volatile uint16_t pwm_captured_ch2_value;
+#if defined(RC_PWM_LEFT) || defined(RC_PWM_RIGHT)
+extern volatile int16_t pwm_captured_ch1_value;
+extern volatile int16_t pwm_captured_ch2_value;
 #endif
 
+#if defined(SW_PWM_RIGHT)||(SW_PWM_LEFT)
+extern volatile int16_t pwm_captured_ch1_value;
+extern volatile int16_t pwm_captured_ch2_value;
+#endif
+
+#if defined(HW_PWM)
+extern volatile int16_t pwm_captured_ch2_value;
+#endif
 
 //------------------------------------------------------------------------
 // Global variables set here in util.c
@@ -240,13 +400,19 @@ static uint8_t standstillAcv = 0;
  
 /* =========================== Initialization Functions =========================== */
 
+#if defined(RC_PWM_LEFT) || defined(RC_PWM_RIGHT) ||defined(SW_PWM_LEFT) || defined(SW_PWM_RIGHT) || defined(HW_PWM)
+void PWM_Init(void);
+#endif
+
+
 void BLDC_Init(void) {
+  BLDC_SetPwmResolution((uint16_t)LEFT_TIM->ARR);
   /* Set BLDC controller parameters */ 
-  #ifdef ENCODER
+  #if defined(ENCODER_X) || defined(ENCODER_Y)
   rtP_Left.b_angleMeasEna       = 1;            // Motor angle input: 0 = estimated angle, 1 = measured angle (e.g. if encoder is available)
-   #else
+  #else
   rtP_Left.b_angleMeasEna       = 0;            // Motor angle input: 0 = estimated angle, 1 = measured angle (e.g. if encoder is available)
-   #endif
+  #endif
   rtP_Left.z_selPhaCurMeasABC   = 0;            // Left motor measured current phases {Blue, Yellow} = {iB, iC} -> do NOT change
   rtP_Left.z_ctrlTypSel         = CTRL_TYP_SEL;
   rtP_Left.b_diagEna            = DIAG_ENA;
@@ -293,7 +459,7 @@ void Input_Init(void) {
     PPM_Init();
   #endif
 
- #if defined(CONTROL_PWM_LEFT) || defined(CONTROL_PWM_RIGHT)
+ #if defined(RC_PWM_LEFT) || defined(RC_PWM_RIGHT) ||defined(SW_PWM_LEFT) || defined(SW_PWM_RIGHT) || defined(HW_PWM)
     PWM_Init();
   #endif
 
@@ -429,32 +595,30 @@ void UART_DisableRxErrors(UART_HandleTypeDef *huart)
 #endif
 
 /* =========================== Encoder Functions =========================== */
-#if defined (ENCODER)
+#if defined (ENCODER_X)
 
-  
-
-void Encoder_Init(void) {
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    __HAL_RCC_TIM4_CLK_ENABLE();
+void Encoder_X_Init(void) {
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_TIM4_CLK_ENABLE();
 
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
     // Channel A
-    GPIO_InitStruct.Pin = ENCODER_CHA_PIN;
+    GPIO_InitStruct.Pin = ENCODER_X_CHA_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(ENCODER_CHA_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    HAL_GPIO_Init(ENCODER_X_CHA_PORT, &GPIO_InitStruct);
 
     // Channel B
-    GPIO_InitStruct.Pin = ENCODER_CHB_PIN;
-    HAL_GPIO_Init(ENCODER_CHB_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = ENCODER_X_CHB_PIN;
+    HAL_GPIO_Init(ENCODER_X_CHB_PORT, &GPIO_InitStruct);
 
-    encoder_handle.Init.Period = ENCODER_CPR - 1;
-    encoder_handle.Init.Prescaler = 0;
-    encoder_handle.Init.ClockDivision = 0;
-    encoder_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
-    encoder_handle.Init.RepetitionCounter = 0;
-    encoder_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  encoder_x_handle.Init.Period = ENCODER_X_CPR - 1;
+  encoder_x_handle.Init.Prescaler = 0;
+  encoder_x_handle.Init.ClockDivision = 0;
+  encoder_x_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
+  encoder_x_handle.Init.RepetitionCounter = 0;
+  encoder_x_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 
     TIM_Encoder_InitTypeDef encoder_config;
 
@@ -470,192 +634,175 @@ void Encoder_Init(void) {
     encoder_config.IC2Prescaler = TIM_ICPSC_DIV1;
     encoder_config.IC2Filter = 0;
 
-    encoder_handle.Instance = ENCODER_TIMER;
+  encoder_x_handle.Instance = ENCODER_X_TIMER;
 
-    if (HAL_TIM_Encoder_Init(&encoder_handle, &encoder_config) != HAL_OK) {
-        encoder.ini = false;
+  if (HAL_TIM_Encoder_Init(&encoder_x_handle, &encoder_config) != HAL_OK) {
+    encoder_x.ini = false;
         return;
     }
-     if (HAL_TIM_Encoder_Start(&encoder_handle, TIM_CHANNEL_ALL) != HAL_OK) {
-        encoder.ini = false;
+   if (HAL_TIM_Encoder_Start(&encoder_x_handle, TIM_CHANNEL_ALL) != HAL_OK) {
+    encoder_x.ini = false;
         return;
     }
     
     // Initialize encoder state
-    encoder.ini = true;
-    encoder.ali = false;
-    encoder.offset = 0;
-    encoder.direction = 1;
-    encoder.current_count = 0;
-    encoder.aligned_count = 0;
-    encoder.mech_angle_deg = 0;
+  encoder_x.ini = true;
+  encoder_x.ali = false;
+  encoder_x.align_fault = false;
+  encoder_x.offset = 0;
+  encoder_x.direction = 1;
+  encoder_x.aligned_count = 0;
+  encoder_x.mech_angle_deg = 0;
     
     // Initialize alignment state variables
-    encoder.align_state = 0;
-    encoder.align_ini_pos = 0;
+  encoder_x.align_state = 0;
+  encoder_x.align_ini_pos = 0;
 }
 
 
 
 
-void Encoder_Align_Start(void) {
-    if (encoder.align_state != 0) {
+void Encoder_X_Align_Start(void) {
+  if (encoder_x.align_state != 0) {
         return; 
     }
+
+  if (encoder_x.align_fault) {
+    return;
+  }
     
     enable = 1;
     rtP_Left.b_diagEna = 0; // Disable diagnostics during alignment
     rtP_Right.b_diagEna = 0; // Disable diagnostics during alignment
-    encoder.align_state = 1; // Start alignment sequence
-    encoder.align_timer = 0;
-    encoder.align_start_time = buzzerTimer;
-    encoder.align_ini_pos = encoder_handle.Instance->CNT;
+  encoder_x.ali = false;
+  encoder_x.align_state = 1; // Start alignment sequence
+  encoder_x.align_timer = 0;
+  encoder_x.align_start_time = buzzerTimer;
+  encoder_x.align_ini_pos = encoder_x_handle.Instance->CNT;
     // Initialize simulation variables
-    encoder.simulated_mech_count = encoder.align_ini_pos; // Start from current position
-    encoder.power_ramp_timer = buzzerTimer;
+  encoder_x.power_ramp_timer = buzzerTimer;
     
   // Calculate count increment for 5.256 electrical rotations in 3000ms (5 + 92°/360°)
   // This compensates for the electrical offset to naturally reach 0° electrical  
   // 5.256 electrical rotations = 5.256/15 mechanical rotations = 0.3504 mechanical rotation
-  // 0.3504 mech rotation = (0.3504 * ENCODER_CPR) counts over 3000ms
+  // 0.3504 mech rotation = (0.3504 * ENCODER_X_CPR) counts over 3000ms
   // Timebase: buzzerTimer runs at 16 ticks/ms -> total ticks = 3000 * 16 = 48000
-  // Increment per tick = (0.3504 * ENCODER_CPR) / 48000
-  // Store as per-tick * 1000 for precision: (0.3504 * ENCODER_CPR * 1000) / 48000
-  // Using integer math: (3504 * ENCODER_CPR * 1000) / (10000 * 48000) = (3504 * ENCODER_CPR) / 480000
-     encoder.count_increment_x1000 = (int32_t)((((int64_t)280) * ENCODER_CPR) / 48000);
+  // Increment per tick = (0.3504 * ENCODER_Y_CPR) / 48000
+  // Store as per-tick * 1000 for precision: (0.3504 * ENCODER_Y_CPR * 1000) / 48000
+  // Using integer math: (3504 * ENCODER_Y_CPR * 1000) / (10000 * 48000) = (3504 * ENCODER_Y_CPR) / 480000
+     encoder_x.count_increment_x1000 = (int32_t)((((int64_t)280) * ENCODER_X_CPR) / 48000);
     
     
-    encoder.align_inpTgt = 0; // Start with 0 power, will ramp up
+    encoder_x.align_inpTgt = 0; // Start with 0 power, will ramp up
     
     
     //ctrlModReq = TORQ;
     //ctrlModReqRaw = ctrlModReq;
     //rtP_Left.z_ctrlTypSel = FOC_CTRL;
-    //encoder.align_inpTgt = ALIGNMENT_VOLTAGE;
+    //encoder.align_inpTgt = ALIGNMENT_X_POWER;
 }
 
 // Non-blocking encoder alignment with mechanical angle simulation - call from main loop
-void Encoder_Align(void) {
+void Encoder_X_Align(void) {
     
   uint32_t current_time = buzzerTimer;
-  uint32_t elapsed_ticks = current_time - encoder.align_start_time;   // in ticks
-  uint32_t ramp_ticks    = current_time - encoder.power_ramp_timer;   // in ticks
+  uint32_t elapsed_ticks = current_time - encoder_x.align_start_time;   // in ticks
+  uint32_t ramp_ticks    = current_time - encoder_x.power_ramp_timer;   // in ticks
     
-    switch (encoder.align_state) {
+    switch (encoder_x.align_state) {
    
             
         case 1: // Rotation phase - 5.167 electrical rotations in 3 seconds, end at 0° electrical
             // Smooth deceleration in last 500ms to prevent sudden stop
             if (ramp_ticks < T_MS(250)) {
-                // Linear ramp: target = (ALIGNMENT_VOLTAGE * ramp_ticks) / T_MS(500)
-                encoder.align_inpTgt = (int16_t)((ALIGNMENT_VOLTAGE * ramp_ticks) / T_MS(250));
+                // Linear ramp: target = (ALIGNMENT_X_POWER * ramp_ticks) / T_MS(500)
+        encoder_x.align_inpTgt = (int16_t)((ALIGNMENT_X_POWER * ramp_ticks) / T_MS(250));
             } else if (elapsed_ticks < T_MS(1250)) {
                 // Full speed rotation for first 1 seconds
-                encoder.align_inpTgt = ALIGNMENT_VOLTAGE;
+        encoder_x.align_inpTgt = ALIGNMENT_X_POWER;
             } else if (elapsed_ticks < T_MS(1500)) {
                 // Smooth deceleration over last 250ms
                 uint32_t decel_ticks = elapsed_ticks - T_MS(1250);
-                encoder.align_inpTgt = (int16_t)(ALIGNMENT_VOLTAGE - (ALIGNMENT_VOLTAGE * decel_ticks) / T_MS(250));
+        encoder_x.align_inpTgt = (int16_t)(ALIGNMENT_X_POWER - (ALIGNMENT_X_POWER * decel_ticks) / T_MS(250));
             }
-            
+
+            // Calculate emulated position increment
             if (elapsed_ticks < T_MS(1500)) {
-                // Calculate simulated position increment
                 // count_increment_x1000 is per tick * 1000
-                int32_t total_increment = (int32_t)(((int64_t)encoder.count_increment_x1000 * (int64_t)elapsed_ticks) / 1000);
-                encoder.simulated_mech_count = encoder.align_ini_pos + total_increment;
+        int32_t total_increment = (int32_t)(((int64_t)encoder_x.count_increment_x1000 * (int64_t)elapsed_ticks) / 1000);
+        encoder_x.emulated_mech_count = encoder_x.align_ini_pos + total_increment;
                 
                 // Handle encoder wraparound
-                encoder.simulated_mech_count = (encoder.simulated_mech_count % (int32_t)ENCODER_CPR + (int32_t)ENCODER_CPR) % (int32_t)ENCODER_CPR;
+        encoder_x.emulated_mech_count = (encoder_x.emulated_mech_count % (int32_t)ENCODER_X_CPR + (int32_t)ENCODER_X_CPR) % (int32_t)ENCODER_X_CPR;
             } else {
                 // 3 seconds completed, snap to 30° electrical instead of 0°
                 // Each electrical rotation = 360°/15 pole pairs = 24° mechanical
                 // 30° electrical = 30°/360° * 24° = 2° mechanical
-                int32_t counts_per_elec_cycle = ENCODER_CPR / 15; // Counts per electrical rotation
-                int32_t counts_per_degree = ENCODER_CPR / 360;    // Counts per mechanical degree
-                int32_t offset_30_elec = 2 * counts_per_degree+5;  // 30° elec = 2° mech
+    int32_t counts_per_elec_cycle = ENCODER_X_CPR / 15; // Counts per electrical rotation
+    int32_t counts_per_degree = ENCODER_X_CPR / 360;    // Counts per mechanical degree
+    int32_t offset_30_elec = 2 * counts_per_degree+5;  // 30° elec = 2° mech
                 
-                int32_t current_elec_cycle = encoder.simulated_mech_count / counts_per_elec_cycle;
-                encoder.simulated_mech_count = current_elec_cycle * counts_per_elec_cycle + offset_30_elec; // Snap to 30° electrical
+    int32_t current_elec_cycle = encoder_x.emulated_mech_count / counts_per_elec_cycle;
+    encoder_x.emulated_mech_count = current_elec_cycle * counts_per_elec_cycle + offset_30_elec; // Snap to 30° electrical
                 
                 // Handle encoder wraparound after adding offset
-                encoder.simulated_mech_count = (encoder.simulated_mech_count % (int32_t)ENCODER_CPR + (int32_t)ENCODER_CPR) % (int32_t)ENCODER_CPR;
+    encoder_x.emulated_mech_count = (encoder_x.emulated_mech_count % (int32_t)ENCODER_X_CPR + (int32_t)ENCODER_X_CPR) % (int32_t)ENCODER_X_CPR;
                 
                 // Move to centering state
-                encoder.align_state = 3;
-                encoder.power_ramp_timer = current_time;   // start high-power ramp timer
+    encoder_x.align_state = 3;
+    encoder_x.power_ramp_timer = current_time;   // start high-power ramp timer
             }
             break;
             
         case 3: // High power phase - double current slowly in 500ms, hold 500ms, then measure
             // Calculate power ramp time for this phase
       if (ramp_ticks < T_MS(250)) {
-                // Ramp from ALIGNMENT_VOLTAGE to 2*ALIGNMENT_VOLTAGE over 500ms
-        int16_t power_increase = (int16_t)((ALIGNMENT_VOLTAGE * ramp_ticks) / T_MS(125));
-                encoder.align_inpTgt = power_increase;
+                // Ramp from ALIGNMENT_X_POWER to 2*ALIGNMENT_X_POWER over 500ms
+        int16_t power_increase = (int16_t)((ALIGNMENT_X_POWER * ramp_ticks) / T_MS(125));
+    encoder_x.align_inpTgt = power_increase;
       } else if (ramp_ticks < T_MS(1000)) {
         // Hold at double power for another 500ms
-        encoder.align_inpTgt = ALIGNMENT_VOLTAGE * 2;
+  encoder_x.align_inpTgt = ALIGNMENT_X_POWER * 2;
       } else {
         // Record real position and calculate offset, then stop
-        int32_t final_real_count = encoder_handle.Instance->CNT;
-        encoder.align_inpTgt = 0;
+  int32_t final_real_count = encoder_x_handle.Instance->CNT;
+  encoder_x.align_inpTgt = 0;  
                 
                 // Determine direction based on encoder movement during alignment
-                int encoder_movement = encoder.align_ini_pos - final_real_count;
-                  //if (encoder_movement > (ENCODER_CPR/2)) encoder_movement -= (ENCODER_CPR);
-                 // if (encoder_movement < -(ENCODER_CPR/2)) encoder_movement += (ENCODER_CPR);
+    int encoder_movement = encoder_x.align_ini_pos - final_real_count;
+                  //if (encoder_movement > (ENCODER_X_CPR/2)) encoder_movement -= (ENCODER_X_CPR);
+                 // if (encoder_movement < -(ENCODER_X_CPR/2)) encoder_movement += (ENCODER_X_CPR);
                 // Determine direction: 1 if positive movement (CW), 0 if negative (CCW)
-                encoder.direction = (encoder_movement > 0) ? 1 : 0;
+    encoder_x.direction = (encoder_movement > 0) ? 1 : 0;
     
-                // Calculate offset: difference between simulated and real position
-                //encoder.offset = encoder.simulated_mech_count - final_real_count;
-               // if (encoder.offset > (ENCODER_CPR/2)) encoder.offset -= (ENCODER_CPR);
-               // if (encoder.offset < -(ENCODER_CPR/2)) encoder.offset += (ENCODER_CPR);
+                // Calculate offset: difference between emulated and real position
+    encoder_x.offset = encoder_x.emulated_mech_count - final_real_count;
+encoder_x.offset = (encoder_x.offset % (int32_t)ENCODER_X_CPR + (int32_t)ENCODER_X_CPR) % (int32_t)ENCODER_X_CPR;
+if (encoder_x.offset > (int32_t)(ENCODER_X_CPR / 2))   { encoder_x.offset -= (int32_t)ENCODER_X_CPR; }
+if (encoder_x.offset < -(int32_t)(ENCODER_X_CPR / 2))  { encoder_x.offset += (int32_t)ENCODER_X_CPR; }
+__HAL_TIM_SET_COUNTER(&encoder_x_handle, encoder_x.emulated_mech_count);
+              
                 
+        int32_t counts_per_elec_cycle = ENCODER_X_CPR / 15; // Counts per electrical rotation (360° elec)
+        int32_t elec_diff_degrees = compute_alignment_error_deg(encoder_x.emulated_mech_count,
+                                    final_real_count,
+                                    counts_per_elec_cycle);
+        boolean_T alignment_error = (elec_diff_degrees > ENCODER_ALIGN_ELEC_TOL_DEG) ||
+                      (elec_diff_degrees < -ENCODER_ALIGN_ELEC_TOL_DEG);
 
-                __HAL_TIM_SET_COUNTER(&encoder_handle, encoder_handle.Instance->CNT+encoder.offset);
+        if (alignment_error) {
+          encoder_x.align_fault = true;
+          buzzerCount = 0;
+          buzzerFreq = 50; // Error tone
+          buzzerPattern = 0b11110000; // Error pattern
+          encoder_x.ali = false;
+        } else {
+          encoder_x.align_fault = false;
+          encoder_x.ali = true;
+        }
 
-
-                /* 
-                // ERROR CHECKING: Verify alignment accuracy in electrical degrees
-                int32_t counts_per_elec_cycle = ENCODER_CPR / 15; // Counts per electrical rotation (360° elec)
-                int32_t counts_per_elec_degree = counts_per_elec_cycle / 360; // Counts per electrical degree
                 
-                // Calculate initial and final electrical positions
-                int32_t initial_elec_pos = (encoder.align_ini_pos % counts_per_elec_cycle);
-                int32_t final_elec_pos = (final_real_count % counts_per_elec_cycle);
-                
-                // Calculate electrical angle difference
-                int32_t elec_difference = final_elec_pos - initial_elec_pos;
-                
-                // Handle electrical wraparound
-                if (elec_difference > (counts_per_elec_cycle / 2)) {
-                    elec_difference -= counts_per_elec_cycle;
-                } else if (elec_difference < -(counts_per_elec_cycle / 2)) {
-                    elec_difference += counts_per_elec_cycle;
-                }
-                
-                // Convert to electrical degrees
-                int32_t elec_diff_degrees = (elec_difference * 360) / counts_per_elec_cycle;
-                
-                // Check if difference is more than 1 electrical degree
-                boolean_T alignment_error = (elec_diff_degrees > 1 || elec_diff_degrees < -1) ? 1 : 0;
-                
-                if (alignment_error) {
-                    // Alignment failed - flash LED or buzzer pattern to indicate error
-                    // For now, we'll still mark as aligned but could add error handling
-                    buzzerCount = 0;
-                    buzzerFreq = 50; // Error tone
-                    buzzerPattern = 0b11110000; // Error pattern
-                    encoder.ali = false;
-                }else{
-                  encoder.ali = true;
-                }
-                */
-                
-                // Mark alignment complete (even with error for now)
-                encoder.ali = true;
-                encoder.align_state = 0; // Reset state machine
+                encoder_x.align_state = 0; // Reset state machine
                 
                 
                 //rtP_Left.b_diagEna = DIAG_ENA; // Re-enable diagnostics
@@ -663,14 +810,232 @@ void Encoder_Align(void) {
             break;
             
         default:
-            encoder.align_state = 0; // Reset on invalid state
+            encoder_x.align_state = 0; // Reset on invalid state
             break;
     }
 }
 
-#endif // ENCODER
+#endif // ENCODER_X
+
+#if defined (ENCODER_Y)
+void Encoder_Y_Init(void) {
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_TIM3_CLK_ENABLE();
+
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+    // Channel A
+    GPIO_InitStruct.Pin = ENCODER_Y_CHA_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(ENCODER_Y_CHA_PORT, &GPIO_InitStruct);
+
+    // Channel B
+    GPIO_InitStruct.Pin = ENCODER_Y_CHB_PIN;
+    HAL_GPIO_Init(ENCODER_Y_CHB_PORT, &GPIO_InitStruct);
+
+  encoder_y_handle.Init.Period = ENCODER_Y_CPR - 1;
+  encoder_y_handle.Init.Prescaler = 0;
+  encoder_y_handle.Init.ClockDivision = 0;
+  encoder_y_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
+  encoder_y_handle.Init.RepetitionCounter = 0;
+  encoder_y_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+
+    TIM_Encoder_InitTypeDef encoder_config;
+
+    encoder_config.EncoderMode = TIM_ENCODERMODE_TI12;
+
+    encoder_config.IC1Polarity = TIM_ICPOLARITY_RISING;
+    encoder_config.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+    encoder_config.IC1Prescaler = TIM_ICPSC_DIV1;
+    encoder_config.IC1Filter = 0;
+
+    encoder_config.IC2Polarity = TIM_ICPOLARITY_RISING;
+    encoder_config.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+    encoder_config.IC2Prescaler = TIM_ICPSC_DIV1;
+    encoder_config.IC2Filter = 0;
+
+  encoder_y_handle.Instance = ENCODER_Y_TIMER;
+
+  if (HAL_TIM_Encoder_Init(&encoder_y_handle, &encoder_config) != HAL_OK) {
+    encoder_y.ini = false;
+        return;
+    }
+   if (HAL_TIM_Encoder_Start(&encoder_y_handle, TIM_CHANNEL_ALL) != HAL_OK) {
+    encoder_y.ini = false;
+        return;
+    }
+    
+    // Initialize encoder state
+  encoder_y.ini = true;
+  encoder_y.ali = false;
+  encoder_y.align_fault = false;
+  encoder_y.offset = 0;
+  encoder_y.direction = 1;
+  encoder_y.aligned_count = 0;
+  encoder_y.mech_angle_deg = 0;
+    
+    // Initialize alignment state variables
+  encoder_y.align_state = 0;
+  encoder_y.align_ini_pos = 0;
+}
 
 
+
+
+void Encoder_Y_Align_Start(void) {
+  if (encoder_y.align_state != 0) {
+        return; 
+    }
+
+  if (encoder_y.align_fault) {
+    return;
+  }
+    
+    enable = 1;
+  rtP_Left.b_diagEna = 0; // Disable diagnostics during alignment
+  rtP_Right.b_diagEna = 0; // Disable diagnostics during alignment
+  encoder_y.ali = false;
+  encoder_y.align_state = 1; // Start alignment sequence
+  encoder_y.align_timer = 0;
+  encoder_y.align_start_time = buzzerTimer;
+  encoder_y.align_ini_pos = encoder_y_handle.Instance->CNT;
+    // Initialize simulation variables
+  encoder_y.power_ramp_timer = buzzerTimer;
+    
+  // Calculate count increment for 5.256 electrical rotations in 3000ms (5 + 92°/360°)
+  // This compensates for the electrical offset to naturally reach 0° electrical  
+  // 5.256 electrical rotations = 5.256/15 mechanical rotations = 0.3504 mechanical rotation
+  // 0.3504 mech rotation = (0.3504 * ENCODER_Y_CPR) counts over 3000ms
+  // Timebase: buzzerTimer runs at 16 ticks/ms -> total ticks = 3000 * 16 = 48000
+  // Increment per tick = (0.3504 * ENCODER_Y_CPR) / 48000
+  // Store as per-tick * 1000 for precision: (0.3504 * ENCODER_Y_CPR * 1000) / 48000
+  // Using integer math: (3504 * ENCODER_Y_CPR * 1000) / (10000 * 48000) = (3504 * ENCODER_Y_CPR) / 480000
+  encoder_y.count_increment_x1000 = (int32_t)((((int64_t)3504) * ENCODER_Y_CPR) / 480000);
+    
+    
+    encoder_y.align_inpTgt = 0; // Start with 0 power, will ramp up
+    
+    
+    //ctrlModReq = TORQ;
+    //ctrlModReqRaw = ctrlModReq;
+    //rtP_Left.z_ctrlTypSel = FOC_CTRL;
+    //encoder.align_inpTgt = ALIGNMENT_Y_POWER;
+}
+
+// Non-blocking encoder alignment with mechanical angle simulation - call from main loop
+void Encoder_Y_Align(void) {
+    
+  uint32_t current_time = buzzerTimer;
+  uint32_t elapsed_ticks = current_time - encoder_y.align_start_time;   // in ticks
+  uint32_t ramp_ticks    = current_time - encoder_y.power_ramp_timer;   // in ticks
+    
+    switch (encoder_y.align_state) {
+   
+            
+        case 1: // Rotation phase - 5.167 electrical rotations in 3 seconds, end at 0° electrical
+            // Smooth deceleration in last 500ms to prevent sudden stop
+            if (ramp_ticks < T_MS(250)) {
+                // Linear ramp: target = (ALIGNMENT_Y_POWER * ramp_ticks) / T_MS(500)
+        encoder_y.align_inpTgt = (int16_t)((ALIGNMENT_Y_POWER * ramp_ticks) / T_MS(250));
+            } else if (elapsed_ticks < T_MS(1250)) {
+                // Full speed rotation for first 1 seconds
+        encoder_y.align_inpTgt = ALIGNMENT_Y_POWER;
+            } else if (elapsed_ticks < T_MS(1500)) {
+                // Smooth deceleration over last 250ms
+                uint32_t decel_ticks = elapsed_ticks - T_MS(1250);
+        encoder_y.align_inpTgt = (int16_t)(ALIGNMENT_Y_POWER - (ALIGNMENT_Y_POWER * decel_ticks) / T_MS(250));
+            }
+            
+            if (elapsed_ticks < T_MS(1500)) {
+                // Calculate emulated position increment
+                // count_increment_x1000 is per tick * 1000
+        int32_t total_increment = (int32_t)(((int64_t)encoder_y.count_increment_x1000 * (int64_t)elapsed_ticks) / 1000);
+        encoder_y.emulated_mech_count = encoder_y.align_ini_pos + total_increment;
+                
+                // Handle encoder wraparound
+        encoder_y.emulated_mech_count = (encoder_y.emulated_mech_count % (int32_t)ENCODER_Y_CPR + (int32_t)ENCODER_Y_CPR) % (int32_t)ENCODER_Y_CPR;
+            } else {
+                // 3 seconds completed, snap to 30° electrical instead of 0°
+                // Each electrical rotation = 360°/15 pole pairs = 24° mechanical
+                // 30° electrical = 30°/360° * 24° = 2° mechanical
+        int32_t counts_per_elec_cycle = ENCODER_Y_CPR / 15; // Counts per electrical rotation
+        int32_t counts_per_degree = ENCODER_Y_CPR / 360;    // Counts per mechanical degree
+        int32_t offset_30_elec = 2 * counts_per_degree+5;  // 30° elec = 2° mech
+                
+        int32_t current_elec_cycle = encoder_y.emulated_mech_count / counts_per_elec_cycle;
+        encoder_y.emulated_mech_count = current_elec_cycle * counts_per_elec_cycle + offset_30_elec; // Snap to 30° electrical
+                
+                // Handle encoder wraparound after adding offset
+        encoder_y.emulated_mech_count = (encoder_y.emulated_mech_count % (int32_t)ENCODER_Y_CPR + (int32_t)ENCODER_Y_CPR) % (int32_t)ENCODER_Y_CPR;
+                
+                // Move to centering state
+        encoder_y.align_state = 3;
+        encoder_y.power_ramp_timer = current_time;   // start high-power ramp timer
+            }
+            break;
+            
+        case 3: // High power phase - double current slowly in 500ms, hold 500ms, then measure
+            // Calculate power ramp time for this phase
+      if (ramp_ticks < T_MS(250)) {
+                // Ramp from ALIGNMENT_Y_POWER to 2*ALIGNMENT_Y_POWER over 500ms
+  int16_t power_increase = (int16_t)((ALIGNMENT_Y_POWER * ramp_ticks) / T_MS(125));
+    encoder_y.align_inpTgt = power_increase;
+      } else if (ramp_ticks < T_MS(1000)) {
+        // Hold at double power for another 500ms
+  encoder_y.align_inpTgt = ALIGNMENT_Y_POWER * 2;
+      } else {
+        // Record real position and calculate offset, then stop
+  int32_t final_real_count = encoder_y_handle.Instance->CNT;
+  encoder_y.align_inpTgt = 0;
+                
+                // Determine direction based on encoder movement during alignment
+    int encoder_movement = encoder_y.align_ini_pos - final_real_count;
+                  //if (encoder_movement > (ENCODER_Y_CPR/2)) encoder_movement -= (ENCODER_Y_CPR);
+                 // if (encoder_movement < -(ENCODER_Y_CPR/2)) encoder_movement += (ENCODER_Y_CPR);
+                // Determine direction: 1 if positive movement (CW), 0 if negative (CCW)
+    encoder_y.direction = (encoder_movement > 0) ? 1 : 0;
+    
+                // Calculate offset: difference between emulated and real position
+         encoder_y.offset = encoder_y.emulated_mech_count - final_real_count;
+         encoder_y.offset = (encoder_y.offset % (int32_t)ENCODER_Y_CPR + (int32_t)ENCODER_Y_CPR) % (int32_t)ENCODER_Y_CPR;
+         if (encoder_y.offset > (ENCODER_Y_CPR/2)) {encoder_y.offset -= (ENCODER_Y_CPR);}
+         if (encoder_y.offset < -(ENCODER_Y_CPR/2)) {encoder_y.offset += (ENCODER_Y_CPR);}
+                
+    __HAL_TIM_SET_COUNTER(&encoder_y_handle, encoder_y_handle.Instance->CNT+encoder_y.offset);
+
+
+        int32_t counts_per_elec_cycle = ENCODER_Y_CPR / 15; // Counts per electrical rotation (360° elec)
+        int32_t elec_diff_degrees = compute_alignment_error_deg(encoder_y.emulated_mech_count,
+                                    final_real_count,
+                                    counts_per_elec_cycle);
+        boolean_T alignment_error = (elec_diff_degrees > ENCODER_ALIGN_ELEC_TOL_DEG) ||
+                      (elec_diff_degrees < -ENCODER_ALIGN_ELEC_TOL_DEG);
+
+        if (alignment_error) {
+          encoder_y.align_fault = true;
+          buzzerCount = 0;
+          buzzerFreq = 50; // Error tone
+          buzzerPattern = 0b11110000; // Error pattern
+          encoder_y.ali = false;
+        } else {
+          encoder_y.align_fault = false;
+          encoder_y.ali = true;
+        }
+                encoder_y.align_state = 0; // Reset state machine
+                
+                
+                
+            }
+            break;
+            
+        default:
+      encoder_y.align_state = 0; // Reset on invalid state
+            break;
+    }
+}
+
+#endif // ENCODER_Y
 /* =========================== General Functions =========================== */
 
 void poweronMelody(void) {
@@ -787,7 +1152,7 @@ void adcCalibLim(void) {
   #endif
 
   // Extract MIN, MAX and MID from ADC while the power button is not pressed
-  while (!HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN) && input_cal_timeout++ < 4000) {   // 20 sec timeout
+  while (!powerButtonPressed() && input_cal_timeout++ < 4000) {   // 20 sec timeout
     readInputRaw();
     filtLowPass32(input1[inIdx].raw, FILTER, &input1_fixdt);
     filtLowPass32(input2[inIdx].raw, FILTER, &input2_fixdt);
@@ -886,7 +1251,7 @@ void updateCurSpdLim(void) {
   cur_spd_valid = 0;
 
   // Wait for the power button press
-  while (!HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN) && cur_spd_timeout++ < 2000) {  // 10 sec timeout
+  while (!powerButtonPressed() && cur_spd_timeout++ < 2000) {  // 10 sec timeout
     readInputRaw();
     filtLowPass32(input1[inIdx].raw, FILTER, &input1_fixdt);
     filtLowPass32(input2[inIdx].raw, FILTER, &input2_fixdt);
@@ -1088,11 +1453,11 @@ void readInputRaw(void) {
     #ifdef CONTROL_ADC
     if (inIdx == CONTROL_ADC) {
       #ifdef ADC_ALTERNATE_CONNECT
-        input1[inIdx].raw = adc_buffer.l_rx2;
-        input2[inIdx].raw = adc_buffer.l_tx2;
+  input1[inIdx].raw = adc_buffer.adc12.value.l_rx2;
+  input2[inIdx].raw = adc_buffer.adc12.value.l_tx2;
       #else
-        input1[inIdx].raw = adc_buffer.l_tx2;
-        input2[inIdx].raw = adc_buffer.l_rx2;
+  input1[inIdx].raw = adc_buffer.adc12.value.l_tx2;
+  input2[inIdx].raw = adc_buffer.adc12.value.l_rx2;
       #endif
     }
     #endif
@@ -1173,27 +1538,43 @@ void readInputRaw(void) {
       button2 = 0;
     #endif
 
-    #if defined(CONTROL_PWM_LEFT)
-    if (inIdx == CONTROL_PWM_LEFT) {
+    #if defined(RC_PWM_LEFT)
+    if (inIdx == RC_PWM_LEFT) {
       input1[inIdx].raw = (pwm_captured_ch1_value - 500) * 2;
       input2[inIdx].raw = (pwm_captured_ch2_value - 500) * 2;
     }
     #endif
-    #if defined(CONTROL_PWM_RIGHT)
-    if (inIdx == CONTROL_PWM_RIGHT) {
+    #if defined(RC_PWM_RIGHT)
+    if (inIdx == RC_PWM_RIGHT) {
       input1[inIdx].raw = (pwm_captured_ch1_value - 500) * 2;
       input2[inIdx].raw = (pwm_captured_ch2_value - 500) * 2;
     }
     #endif
-
+    #if defined(SW_PWM_RIGHT)
+    if (inIdx == SW_PWM_RIGHT) {
+      input1[inIdx].raw = pwm_captured_ch1_value;
+      input2[inIdx].raw = pwm_captured_ch2_value;
+    }
+    #endif
+    #if defined(SW_PWM_LEFT)
+    if (inIdx == SW_PWM_LEFT) {
+      input1[inIdx].raw = pwm_captured_ch1_value;
+      input2[inIdx].raw = pwm_captured_ch2_value;
+    }
+    #endif
+#if defined(HW_PWM)
+    if (inIdx == HW_PWM) {
+      input2[inIdx].raw = pwm_captured_ch2_value;                       
+    }
+    #endif
     #ifdef VARIANT_TRANSPOTTER
       #ifdef GAMETRAK_CONNECTION_NORMAL
-        input1[inIdx].cmd = adc_buffer.l_rx2;
-        input2[inIdx].cmd = adc_buffer.l_tx2;
+  input1[inIdx].cmd = adc_buffer.adc12.value.l_rx2;
+  input2[inIdx].cmd = adc_buffer.adc12.value.l_tx2;
       #endif
       #ifdef GAMETRAK_CONNECTION_ALTERNATE
-        input1[inIdx].cmd = adc_buffer.l_tx2;
-        input2[inIdx].cmd = adc_buffer.l_rx2;
+  input1[inIdx].cmd = adc_buffer.adc12.value.l_tx2;
+  input2[inIdx].cmd = adc_buffer.adc12.value.l_rx2;
       #endif
     #endif
 }
@@ -1269,35 +1650,36 @@ void handleTimeout(void) {
     #endif
 
     #if defined(CONTROL_NUNCHUK) || defined(SUPPORT_NUNCHUK) || defined(VARIANT_TRANSPOTTER) || \
-        defined(CONTROL_PPM_LEFT) || defined(CONTROL_PPM_RIGHT) || defined(CONTROL_PWM_LEFT) || defined(CONTROL_PWM_RIGHT)
+        defined(CONTROL_PPM_LEFT) || defined(CONTROL_PPM_RIGHT) || defined(RC_PWM_LEFT) || defined(RC_PWM_RIGHT)|| defined(SW_PWM_RIGHT) || defined(SW_PWMLEFT)
       if (timeoutCntGen++ >= TIMEOUT) {                 // Timeout qualification
         #if defined(CONTROL_NUNCHUK) || defined(SUPPORT_NUNCHUK) || defined(VARIANT_TRANSPOTTER) || \
             (defined(CONTROL_PPM_LEFT) && CONTROL_PPM_LEFT == 0) || (defined(CONTROL_PPM_RIGHT) && CONTROL_PPM_RIGHT == 0) || \
-            (defined(CONTROL_PWM_LEFT) && CONTROL_PWM_LEFT == 0) || (defined(CONTROL_PWM_RIGHT) && CONTROL_PWM_RIGHT == 0)
+            (defined(RC_PWM_LEFT) && RC_PWM_LEFT == 0) || (defined(RC_PWM_RIGHT) && RC_PWM_RIGHT == 0)||\
+            (defined(SW_PWMLEFT) && SW_PWMLEFT == 0) || (defined(SW_PWM_RIGHT) && SW_PWM_RIGHT == 0)
           timeoutFlgGen = 1;                            // Report Timeout only on the Primary Input
           timeoutCntGen = TIMEOUT;
         #endif
         #if defined(DUAL_INPUTS) && ((defined(CONTROL_PPM_LEFT)  && CONTROL_PPM_LEFT == 1) || (defined(CONTROL_PPM_RIGHT) && CONTROL_PPM_RIGHT == 1) || \
-                                     (defined(CONTROL_PWM_LEFT)  && CONTROL_PWM_LEFT == 1) || (defined(CONTROL_PWM_RIGHT) && CONTROL_PWM_RIGHT == 1))
+                                     (defined(RC_PWM_LEFT)  && RC_PWM_LEFT == 1) || (defined(RC_PWM_RIGHT) && RC_PWM_RIGHT == 1))
           inIdx = 0;                                    // Switch to Primary input in case of Timeout on Auxiliary input
         #endif
       } else {
         #if defined(DUAL_INPUTS) && ((defined(CONTROL_PPM_LEFT)  && CONTROL_PPM_LEFT == 1) || (defined(CONTROL_PPM_RIGHT) && CONTROL_PPM_RIGHT == 1) || \
-                                     (defined(CONTROL_PWM_LEFT)  && CONTROL_PWM_LEFT == 1) || (defined(CONTROL_PWM_RIGHT) && CONTROL_PWM_RIGHT == 1))
+                                     (defined(RC_PWM_LEFT)  && RC_PWM_LEFT == 1) || (defined(RC_PWM_RIGHT) && RC_PWM_RIGHT == 1))
           inIdx = 1;                                    // Switch to Auxiliary input in case of NO Timeout on Auxiliary input
         #endif
       }
     #endif
-#ifdef ENCODER
-    // In case of timeout bring the system to a Safe State
-    if ((timeoutFlgADC || timeoutFlgSerial || timeoutFlgGen) && (!encoder.align_state)) {
+#if defined(ENCODER_X) || defined(ENCODER_Y)
+  // In case of timeout bring the system to a Safe State
+  if ((timeoutFlgADC || timeoutFlgSerial || timeoutFlgGen) && (!encoder_alignment_active())) {
       ctrlModReq  = OPEN_MODE;                                          // Request OPEN_MODE. This will bring the motor power to 0 in a controlled way
       input1[inIdx].cmd  = 0;
       input2[inIdx].cmd  = 0;
     } else {
       ctrlModReq  = ctrlModReqRaw;                                      // Follow the Mode request
     }
-
+ 
     // Beep in case of Input index change
     if (inIdx && !inIdx_prev) {                                         // rising edge
       beepShort(8);
@@ -1835,19 +2217,21 @@ void poweroff(void) {
 
 void poweroffPressCheck(void) {
   #if !defined(VARIANT_HOVERBOARD) && !defined(VARIANT_TRANSPOTTER)
-    if(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
+    if (powerButtonPressed()) {
       uint16_t cnt_press = 0;
-      while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
+      while (powerButtonPressed()) {
         HAL_Delay(10);
         if (cnt_press++ == 5 * 100) { beepShort(5); }
       }
 
-      if (cnt_press > 8) enable = 0;
+      if (cnt_press > 8) {
+        enable = 0;
+      }
 
       if (cnt_press >= 5 * 100) {                         // Check if press is more than 5 sec
         HAL_Delay(1000);
-        if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {  // Double press: Adjust Max Current, Max Speed
-          while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { HAL_Delay(10); }
+        if (powerButtonPressed()) {                       // Double press: Adjust Max Current, Max Speed
+          while (powerButtonPressed()) { HAL_Delay(10); }
           beepLong(8);
           updateCurSpdLim();
           beepShort(5);
@@ -1862,17 +2246,16 @@ void poweroffPressCheck(void) {
         #if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
           printf("Powering off, button has been pressed\r\n");
         #endif
-      poweroff();
+        poweroff();
       }
     }
   #elif defined(VARIANT_TRANSPOTTER)
-    if(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
+    if (powerButtonPressed()) {
       enable = 0;
-      while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { HAL_Delay(10); }
-      beepShort(5);
+      while (powerButtonPressed()) { HAL_Delay(10); }
       HAL_Delay(300);
-      if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
-        while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { HAL_Delay(10); }
+      if (powerButtonPressed()) {
+        while (powerButtonPressed()) { HAL_Delay(10); }
         beepLong(5);
         HAL_Delay(350);
         poweroff();
@@ -1887,9 +2270,9 @@ void poweroffPressCheck(void) {
       }
     }
   #else
-    if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
+    if (powerButtonPressed()) {
       enable = 0;                                             // disable motors
-      while (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {}    // wait until button is released
+      while (powerButtonPressed()) {}                        // wait until button is released
       poweroff();                                             // release power-latch
     }
   #endif

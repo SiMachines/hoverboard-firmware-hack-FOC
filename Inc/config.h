@@ -66,6 +66,7 @@
  * 1 - Alternate board type with different pin mapping for DCLINK, Buzzer and ON/OFF, Button and Charger
 */
 #define BOARD_VARIANT           0         // change if board with alternate pin mapping
+//#define GD32F103Rx              1   // define if you are using a GD32F103Rx MCU to set system clock to 108MHz  
 // ######################## END OF BOARD VARIANT ###############################
 
 // ############################### BATTERY ###############################
@@ -80,7 +81,7 @@
 #define BAT_CELLS               6        // battery number of cells. Normal Hoverboard battery: 10s
 #define BAT_LVL2_ENABLE         0         // to beep or not to beep, 1 or 0
 #define BAT_LVL1_ENABLE         0         // to beep or not to beep, 1 or 0
-#define BAT_DEAD_ENABLE         0         // to poweroff or not to poweroff, 1 or 0
+#define BAT_DEAD_ENABLE         1         // to poweroff or not to poweroff, 1 or 0
 #define BAT_BLINK_INTERVAL      80        // battery led blink interval (80 loops * 5ms ~= 400ms)
 #define BAT_LVL5                (390 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE    // Green blink:  no beep
 #define BAT_LVL4                (380 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE    // Yellow:       no beep
@@ -128,10 +129,10 @@
  * 2. The Field Weakening starts engaging at FIELD_WEAK_LO and reaches the maximum value at FIELD_WEAK_HI
  * 3. If you re-calibrate the Field Weakening please take all the safety measures! The motors can spin very fast!
 
-   Inputs:
-    - input1[inIdx].cmd and input2[inIdx].cmd: normalized input values. INPUT_MIN to INPUT_MAX
-    - button1 and button2: digital input values. 0 or 1
-    - adc_buffer.l_tx2 and adc_buffer.l_rx2: unfiltered ADC values (you do not need them). 0 to 4095
+  Inputs:
+   - input1[inIdx].cmd and input2[inIdx].cmd: normalized input values. INPUT_MIN to INPUT_MAX
+   - button1 and button2: digital input values. 0 or 1
+   - adc_buffer.adc12.value.l_tx2 and adc_buffer.adc12.value.l_rx2: unfiltered ADC values (you do not need them). 0 to 4095
    Outputs:
     - cmdL and cmdR: normal driving INPUT_MIN to INPUT_MAX
 */
@@ -166,6 +167,30 @@
 #define FIELD_WEAK_LO   750             // ( 500, 1000] Input target Low threshold for starting Field Weakening / Phase Advance. Do NOT set this higher than 1000.
 
 // Extra functionality
+//#define BEEPER_OFF
+//#define ENCODER_X
+//#define ENCODER_Y                         // 
+#define ANALOG_BUTTON                     // Monitor BUTTON_PIN with ADC1 analog watchdog
+#if defined(ANALOG_BUTTON)
+  #define POWER_BUTTON_ADC_FULL_SCALE        4096U   // 12-bit ADC
+  #define POWER_BUTTON_ADC_REFERENCE_MV      3300U   // ADC reference voltage in millivolts
+  #define POWER_BUTTON_DIVIDER_RATIO_X100    1800U   // Resistor divider scaling (e.g. 18.0 => 33V -> 1.83V)
+  #define POWER_BUTTON_THRESHOLD_MV          19000U  // Trip point for treating the switch as pressed
+  #define POWER_BUTTON_RELEASE_MARGIN_MV     2000U   // Hysteresis below the trip point before we call it released
+
+  #if POWER_BUTTON_RELEASE_MARGIN_MV >= POWER_BUTTON_THRESHOLD_MV
+    #error "POWER_BUTTON_RELEASE_MARGIN_MV must be smaller than POWER_BUTTON_THRESHOLD_MV"
+  #endif
+
+  #define POWER_BUTTON_ADC_DENOM          ((POWER_BUTTON_ADC_REFERENCE_MV) * (POWER_BUTTON_DIVIDER_RATIO_X100))
+  #define POWER_BUTTON_ADC_COUNTS_FROM_MV(mv) \
+    (((((mv) * POWER_BUTTON_ADC_FULL_SCALE) * 100ULL) + POWER_BUTTON_ADC_DENOM / 2ULL) / POWER_BUTTON_ADC_DENOM)
+
+  #define ANALOG_BUTTON_PRESSED_MIN    POWER_BUTTON_ADC_COUNTS_FROM_MV(POWER_BUTTON_THRESHOLD_MV)
+  #define ANALOG_BUTTON_RELEASE_MAX    POWER_BUTTON_ADC_COUNTS_FROM_MV((POWER_BUTTON_THRESHOLD_MV) - (POWER_BUTTON_RELEASE_MARGIN_MV))
+#endif
+//#define ADC3_RIGHT_POTENTIOMETERS            // Sample the right sensor board analog inputs (PB0/PB1) with ADC3
+//#define HOCP                            // Tie PA6/PB12 hardware over-current signals into TIM1/TIM8 break inputs
 // #define STANDSTILL_HOLD_ENABLE          // [-] Flag to hold the position when standtill is reached. Only available and makes sense for VOLTAGE or TORQUE mode.
 // #define ELECTRIC_BRAKE_ENABLE           // [-] Flag to enable electric brake and replace the motor "freewheel" with a constant braking when the input torque request is 0. Only available and makes sense for TORQUE mode.
 // #define ELECTRIC_BRAKE_MAX    100       // (0, 500) Maximum electric brake to be applied when input torque request is 0 (pedal fully released).
@@ -176,13 +201,12 @@
 
 // ############################## DEFAULT SETTINGS ############################
 // Default settings will be applied at the end of this config file if not set before
-#define INACTIVITY_TIMEOUT        8      // Minutes of not driving until poweroff. it is not very precise.
+#define INACTIVITY_TIMEOUT        8      // Minutes of not driving until poweroff. it is not very precise. Set to 0 to deactivate
 #define BEEPS_BACKWARD            0       // 0 or 1
 #define ADC_MARGIN                100     // ADC input margin applied on the raw ADC min and max to make sure the MIN and MAX values are reached even in the presence of noise
 #define ADC_PROTECT_TIMEOUT       100     // ADC Protection: number of wrong / missing input commands before safety state is taken
 #define ADC_PROTECT_THRESH        200     // ADC Protection threshold below/above the MIN/MAX ADC values
-#define ENCODER
-//#define AUTO_CALIBRATION_ENA              // Enable/Disable input auto-calibration by holding power button pressed. Un-comment this if auto-calibration is not needed.
+#define AUTO_CALIBRATION_ENA              // Enable/Disable input auto-calibration by holding power button pressed. Un-comment this if auto-calibration is not needed.
 
 /* FILTER is in fixdt(0,16,16): VAL_fixedPoint = VAL_floatingPoint * 2^16. In this case 6553 = 0.1 * 2^16
  * Value of COEFFICIENT is in fixdt(1,16,14)
@@ -245,7 +269,7 @@
  * in2:     (int16_t)input2[inIdx].raw);                                        raw input2: ADC2, UART, PWM, PPM, iBUS
  * cmdL:    (int16_t)cmdL);                                                     output command Left: [-1000, 1000]
  * cmdR:    (int16_t)cmdR);                                                     output command Right: [-1000, 1000]
- * BatADC:  (int16_t)adc_buffer.batt1);                                         Battery adc-value measured by mainboard
+ * BatADC:  (int16_t)adc_buffer.adc12.value.batt1);                             Battery adc-value measured by mainboard
  * BatV:    (int16_t)(batVoltage * BAT_CALIB_REAL_VOLTAGE / BAT_CALIB_ADC));    Battery calibrated voltage multiplied by 100 for verifying battery voltage calibration
  * TempADC: (int16_t)board_temp_adcFilt);                                       for board temperature calibration
  * Temp:    (int16_t)board_temp_deg_c);                                         Temperature in celcius for verifying board temperature calibration
@@ -426,15 +450,15 @@
   #ifdef DUAL_INPUTS
     #define FLASH_WRITE_KEY       0x1105  // Flash memory writing key. Change this key to ignore the input calibrations from the flash memory and use the ones in config.h
     #define CONTROL_ADC           0       // use ADC as input. Number indicates priority for dual-input. Disable CONTROL_SERIAL_USART2, FEEDBACK_SERIAL_USART2, DEBUG_SERIAL_USART2!
-    #define CONTROL_PWM_RIGHT     1       // use RC PWM as input on the RIGHT cable. Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART3!
+    #define RC_PWM_RIGHT     1       // use RC PWM as input on the RIGHT cable. Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART3!
     #define PRI_INPUT1            3,     0, 0, 4095,   0  // TYPE, MIN, MID, MAX, DEADBAND. See INPUT FORMAT section
     #define PRI_INPUT2            3,     0, 0, 4095,   0  // TYPE, MIN, MID, MAX, DEADBAND. See INPUT FORMAT section
     #define AUX_INPUT1            3, -1000, 0, 1000, 100  // TYPE, MIN, MID, MAX, DEADBAND. See INPUT FORMAT section
     #define AUX_INPUT2            3, -1000, 0, 1000, 100  // TYPE, MIN, MID, MAX, DEADBAND. See INPUT FORMAT section
   #else
     #define FLASH_WRITE_KEY       0x1005  // Flash memory writing key. Change this key to ignore the input calibrations from the flash memory and use the ones in config.h
-    // #define CONTROL_PWM_LEFT      0       // use RC PWM as input on the LEFT cable. Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART2!
-    #define CONTROL_PWM_RIGHT     0       // use RC PWM as input on the RIGHT cable. Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART3!
+    // #define RC_PWM_LEFT      0       // use RC PWM as input on the LEFT cable. Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART2!
+    #define RC_PWM_RIGHT     0       // use RC PWM as input on the RIGHT cable. Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART3!
     #define PRI_INPUT1            3, -1000, 0, 1000, 100  // TYPE, MIN, MID, MAX, DEADBAND. See INPUT FORMAT section
     #define PRI_INPUT2            3, -1000, 0, 1000, 100  // TYPE, MIN, MID, MAX, DEADBAND. See INPUT FORMAT section
   #endif
@@ -448,9 +472,9 @@
   // #define SUPPORT_BUTTONS_LEFT            // use left sensor board cable for button inputs.  Disable DEBUG_SERIAL_USART2!
   // #define SUPPORT_BUTTONS_RIGHT           // use right sensor board cable for button inputs. Disable DEBUG_SERIAL_USART3!
 
-  #if defined(CONTROL_PWM_RIGHT) && !defined(DUAL_INPUTS)
+  #if defined(RC_PWM_RIGHT) && !defined(DUAL_INPUTS)
     #define DEBUG_SERIAL_USART2           // left sensor cable debug
-  #elif defined(CONTROL_PWM_LEFT) && !defined(DUAL_INPUTS)
+  #elif defined(RC_PWM_LEFT) && !defined(DUAL_INPUTS)
     #define DEBUG_SERIAL_USART3           // right sensor cable debug
   #endif
 #endif
@@ -611,8 +635,8 @@
   #define FLASH_WRITE_KEY     0x1010    // Flash memory writing key. Change this key to ignore the input calibrations from the flash memory and use the ones in config.h
   #undef  CTRL_MOD_REQ
   #define CTRL_MOD_REQ        TRQ_MODE  // SKATEBOARD works best in TORQUE Mode
-  // #define CONTROL_PWM_LEFT    0         // use RC PWM as input on the LEFT cable. Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART2!
-  #define CONTROL_PWM_RIGHT   0         // use RC PWM as input on the RIGHT cable.  Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART3!
+  // #define RC_PWM_LEFT    0         // use RC PWM as input on the LEFT cable. Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART2!
+  #define RC_PWM_RIGHT   0         // use RC PWM as input on the RIGHT cable.  Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART3!
 
   #define PRI_INPUT1          0, -1000, 0, 1000,   0    // Disabled. TYPE, MIN, MID, MAX, DEADBAND. See INPUT FORMAT section
   #define PRI_INPUT2          2,  -800, 0,  700, 100    // Active.   TYPE, MIN, MID, MAX, DEADBAND. See INPUT FORMAT section
@@ -627,7 +651,7 @@
   // #define SUPPORT_BUTTONS_RIGHT      // use right sensor board cable for button inputs. Disable DEBUG_SERIAL_USART3!
   // #define STANDSTILL_HOLD_ENABLE     // [-] Flag to hold the position when standtill is reached. Only available and makes sense for VOLTAGE or TORQUE mode.
 
-  #ifdef CONTROL_PWM_RIGHT
+  #ifdef RC_PWM_RIGHT
     #define DEBUG_SERIAL_USART2         // left sensor cable debug
   #else
     #define DEBUG_SERIAL_USART3         // right sensor cable debug
@@ -637,48 +661,53 @@
 
 
 
-// ################################# VARIANT_ENCODER SETTINGS ############################
-#ifdef VARIANT_ENCODER
+// ################################# ONE_AXIS_VARIANT SETTINGS ############################
+#ifdef ONE_AXIS_VARIANT
 /* ###### CONTROL VIA ENCODER ######
- * This variant is for using encoders for motor control.
+ * This variant is for using encoder for motor control.
 */
-#if defined ENCODER
-#define ENCODER_PPR      2048     // Pulses per revolution
-#define ENCODER_CPR      (ENCODER_PPR * 4)
-#define ENCODER_TIMER    TIM4
-#define ENCODER_CHA_PORT GPIOB
-#define ENCODER_CHB_PORT GPIOB
-#define ENCODER_CHA_PIN  GPIO_PIN_7
-#define ENCODER_CHB_PIN  GPIO_PIN_6
-#define ALIGNMENT_VOLTAGE       200      // [-] Voltage used for sensor alignment. [-1000, 1000]
+#define GD32F103Rx              1   // define if you are using a GD32F103Rx MCU to set system clock to 108MHz  
+#define HOCP                            // Tie PA6/PB12 hardware over-current signals into TIM1/TIM8 break inputs
+#define BEEPER_OFF
+#define ENCODER_X
+//#define ENCODER_Y  
+
+#if defined ENCODER_X
+#define ENCODER_X_PPR              2048     // Pulses per revolution
+#define ALIGNMENT_X_POWER        200      // [-] Voltage used for sensor alignment. [-1000, 1000]
 #endif
-  #define FLASH_WRITE_KEY     0x1011    // Flash memory writing key.
+  #define FLASH_WRITE_KEY        0x1011    // Flash memory writing key.
   #undef  CTRL_MOD_REQ
   #undef  CTRL_TYP_SEL
-  #define CTRL_TYP_SEL        FOC_CTRL 
-  #define CTRL_MOD_REQ        TRQ_MODE  
+  #define CTRL_TYP_SEL           FOC_CTRL 
+  #define CTRL_MOD_REQ           TRQ_MODE  
   
-  //#define TANK_STEERING  
+  #define TANK_STEERING  
   //#define MOTOR_LEFT_ENA                  // [-] Enable LEFT motor.  Comment-out if this motor is not needed to be operational
 #define MOTOR_RIGHT_ENA                 // [-] Enable RIGHT motor. Comment-out if this motor is not needed to be operational
 #undef  DIAG_ENA 
-#define DIAG_ENA        0               // [-] Motor Diagnostics enable flag: 0 = Disabled, 1 = Enabled (default)
+#define DIAG_ENA                 1               // [-] Motor Diagnostics enable flag: 0 = Disabled, 1 = Enabled (default)
 #undef  INACTIVITY_TIMEOUT
-#define INACTIVITY_TIMEOUT        100
+#define INACTIVITY_TIMEOUT       100
 // Limitation settings
-#define I_MOT_MAX       15              // [A] Maximum single motor current limit
-#define I_DC_MAX        17              // [A] Maximum stage2 DC Link current limit for Commutation and Sinusoidal types (This is the final current protection. Above this value, current chopping is applied. To avoid this make sure that I_DC_MAX = I_MOT_MAX + 2A)
-#define N_MOT_MAX       1000            // [rpm] Maximum motor speed limit
+#undef N_MOT_MAX 
+#undef I_MOT_MAX 
+#define I_MOT_MAX                15              // [A] Maximum single motor current limit
+#define I_DC_MAX                 17              // [A] Maximum stage2 DC Link current limit for Commutation and Sinusoidal types (This is the final current protection. Above this value, current chopping is applied. To avoid this make sure that I_DC_MAX = I_MOT_MAX + 2A)
+#define N_MOT_MAX                2000            // [rpm] Maximum motor speed limit
 
-#define FIELD_WEAK_ENA  0   
-//#define CONTROL_PWM_LEFT   0         // Using PWM for input
-#define CONTROL_SERIAL_USART3  0    // left sensor board cable, disable if ADC or PPM is used! For Arduino control check the hoverSerial.ino
-#define FEEDBACK_SERIAL_USART3      // left sensor board cable, disable if ADC or PPM is used!
-  #define PRI_INPUT1          0, -1000, 0, 1000,   0    
-  #define PRI_INPUT2          1, -1000, 0, 1000, 100   
+#define FIELD_WEAK_ENA           0 
+//#define RC_PWM_RIGHT           0         // use RC PWM as input on the RIGHT cable.  Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART3!
+//#define HW_PWM                   0 
+#define SW_PWM_RIGHT             0         // UsingPWM input capture on PB10 and PB11 (duty cycle mapped to 0 to -1000, 0, 1000,)
+//#define SW_PWM_LEFT            0 
+//#define CONTROL_SERIAL_USART3  0    // left sensor board cable, disable if ADC or PPM is used! For Arduino control check the hoverSerial.ino
+//#define FEEDBACK_SERIAL_USART3      // left sensor board cable, disable if ADC or PPM is used!
+  #define PRI_INPUT1             0, -1000, 0, 1000,   0    
+  #define PRI_INPUT2             2, -1000, 0, 1000,   0   
 
-  #define RATE              480
-  #define FILTER              6553
+  #define RATE                   32767 
+  #define FILTER                 15000
   //#define INVERT_R_DIRECTION
   //#define INVERT_L_DIRECTION
   //#define DEBUG_SERIAL_USART3         // left sensor cable debug
@@ -686,7 +715,63 @@
   
   
 #endif
-// ############################# END OF VARIANT_ENCODER SETTINGS ############################
+
+
+#ifdef TWO_AXIS_VARIANT
+/* ###### CONTROL VIA ENCODER ######
+ * This variant is for using encoders for motor control.
+*/
+#define GD32F103Rx              1   // define if you are using a GD32F103Rx MCU to set system clock to 108MHz  
+#define BEEPER_OFF
+#define ENCODER_X
+#define ENCODER_Y  
+
+#if defined ENCODER_X
+#define ENCODER_X_PPR              2048     // Pulses per revolution
+#define ALIGNMENT_X_POWER        200      // [-] Voltage used for sensor alignment. [-1000, 1000]
+#endif
+#if defined ENCODER_Y
+#define ENCODER_Y_PPR              2048     // Pulses per revolution
+#define ALIGNMENT_Y_POWER        200      // [-] Voltage used for sensor alignment. [-1000, 1000]
+#endif
+
+  #define FLASH_WRITE_KEY        0x1011    // Flash memory writing key.
+  #undef  CTRL_MOD_REQ
+  #undef  CTRL_TYP_SEL
+  #define CTRL_TYP_SEL           FOC_CTRL 
+  #define CTRL_MOD_REQ           TRQ_MODE  
+  
+  #define TANK_STEERING  
+#define MOTOR_LEFT_ENA                  // [-] Enable LEFT motor.  Comment-out if this motor is not needed to be operational
+#define MOTOR_RIGHT_ENA                 // [-] Enable RIGHT motor. Comment-out if this motor is not needed to be operational
+#undef  DIAG_ENA 
+#define DIAG_ENA                 0               // [-] Motor Diagnostics enable flag: 0 = Disabled, 1 = Enabled (default)
+#undef  INACTIVITY_TIMEOUT
+#define INACTIVITY_TIMEOUT       100
+// Limitation settings
+#undef I_MOT_MAX 
+#undef N_MOT_MAX
+#define I_MOT_MAX                15              // [A] Maximum single motor current limit
+#define I_DC_MAX                 17              // [A] Maximum stage2 DC Link current limit for Commutation and Sinusoidal types (This is the final current protection. Above this value, current chopping is applied. To avoid this make sure that I_DC_MAX = I_MOT_MAX + 2A)
+#define N_MOT_MAX                2000            // [rpm] Maximum motor speed limit
+
+#define FIELD_WEAK_ENA           0 
+//#define RC_PWM_RIGHT           0         // use RC PWM as input on the RIGHT cable.  Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART3!
+//#define HW_PWM                 0 
+#define SW_PWM_RIGHT             0         // UsingPWM input capture on PB10 and PB11 (duty cycle mapped to 0 to -1000, 0, 1000,)
+//#define SW_PWM_LEFT            0 
+//#define CONTROL_SERIAL_USART3  0    // left sensor board cable, disable if ADC or PPM is used! For Arduino control check the hoverSerial.ino
+//#define FEEDBACK_SERIAL_USART3      // left sensor board cable, disable if ADC or PPM is used!
+  #define PRI_INPUT1             2, -1000, 0, 1000,   0    
+  #define PRI_INPUT2             2, -1000, 0, 1000,   0   
+
+  #define RATE                   32767 
+  #define FILTER                 15000
+  #define INVERT_R_DIRECTION
+  //#define INVERT_L_DIRECTION
+  //#define DEBUG_SERIAL_USART3         // left sensor cable debug
+
+#endif
 
 // ########################### UART SETIINGS ############################
 #if defined(FEEDBACK_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(DEBUG_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2) || \
@@ -735,7 +820,7 @@
 
 // ############################### VALIDATE SETTINGS ###############################
 #if !defined(VARIANT_ADC) && !defined(VARIANT_USART) && !defined(VARIANT_NUNCHUK) && !defined(VARIANT_PPM) && !defined(VARIANT_PWM) && \
-    !defined(VARIANT_IBUS) && !defined(VARIANT_HOVERCAR) && !defined(VARIANT_HOVERBOARD) && !defined(VARIANT_TRANSPOTTER) && !defined(VARIANT_SKATEBOARD) && !defined(VARIANT_ENCODER)
+    !defined(VARIANT_IBUS) && !defined(VARIANT_HOVERCAR) && !defined(VARIANT_HOVERBOARD) && !defined(VARIANT_TRANSPOTTER) && !defined(VARIANT_SKATEBOARD) && !defined(TWO_AXIS_VARIANT) && !defined(ONE_AXIS_VARIANT)
   #error Variant not defined! Please check platformio.ini or Inc/config.h for available variants.
 #endif
 
@@ -765,8 +850,16 @@
   #error CONTROL_PPM_LEFT and CONTROL_PPM_RIGHT not allowed, choose one.
 #endif
 
-#if defined(CONTROL_PWM_LEFT) && defined(CONTROL_PWM_RIGHT)
-  #error CONTROL_PWM_LEFT and CONTROL_PWM_RIGHT not allowed, choose one.
+#if defined(RC_PWM_LEFT) && defined(RC_PWM_RIGHT)
+  #error RC_PWM_LEFT and RC_PWM_RIGHT not allowed, choose one.
+#endif
+
+#if defined(HW_PWM) && defined(ENCODER_Y) 
+  #error HW_PWM and ENCODER_L are on the same pins, not possible to use at the same time.
+#endif
+
+#if defined(SW_PWM_LEFT) && defined(SW_PWM_RIGHT)
+  #error SW_PWM_LEFT and SW_PWM_RIGHT not allowed, choose one.
 #endif
 
 #if defined(SUPPORT_BUTTONS_LEFT) && defined(SUPPORT_BUTTONS_RIGHT)
@@ -783,24 +876,24 @@
   #error CONTROL_PPM_LEFT and SERIAL_USART2 not allowed. It is on the same cable.
 #endif
 
-#if defined(CONTROL_PWM_LEFT) && (defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(DEBUG_SERIAL_USART2))
-  #error CONTROL_PWM_LEFT and SERIAL_USART2 not allowed. It is on the same cable.
+#if (defined(RC_PWM_LEFT)||defined(SW_PWM_LEFT)) && (defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(DEBUG_SERIAL_USART2))
+  #error (RC_PWM_LEFT or SW_PWM_LEFT) and SERIAL_USART2 not allowed. It is on the same cable.
 #endif
 
 #if defined(SUPPORT_BUTTONS_LEFT) && (defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(DEBUG_SERIAL_USART2))
   #error SUPPORT_BUTTONS_LEFT and SERIAL_USART2 not allowed. It is on the same cable.
 #endif
 
-#if defined(SUPPORT_BUTTONS_LEFT) && (defined(CONTROL_ADC) || defined(CONTROL_PPM_LEFT) || defined(CONTROL_PWM_LEFT))
-  #error SUPPORT_BUTTONS_LEFT and (CONTROL_ADC or CONTROL_PPM_LEFT or CONTROL_PWM_LEFT) not allowed. It is on the same cable.
+#if defined(SUPPORT_BUTTONS_LEFT) && (defined(CONTROL_ADC) || defined(CONTROL_PPM_LEFT) || defined(RC_PWM_LEFT))
+  #error SUPPORT_BUTTONS_LEFT and (CONTROL_ADC or CONTROL_PPM_LEFT or RC_PWM_LEFT) not allowed. It is on the same cable.
 #endif
 
-#if defined(CONTROL_ADC) && (defined(CONTROL_PPM_LEFT) || defined(CONTROL_PWM_LEFT))
-  #error CONTROL_ADC and (CONTROL_PPM_LEFT or CONTROL_PWM_LEFT) not allowed. It is on the same cable.
+#if defined(CONTROL_ADC) && (defined(CONTROL_PPM_LEFT) || defined(RC_PWM_LEFT)||defined(SW_PWM_LEFT))
+  #error CONTROL_ADC and (CONTROL_PPM_LEFT or RC_PWM_LEFT or SW_PWM_LEFT) not allowed. It is on the same cable.
 #endif
 
-#if defined(CONTROL_PPM_LEFT) && defined(CONTROL_PWM_LEFT)
-  #error CONTROL_PPM_LEFT and CONTROL_PWM_LEFT not allowed. It is on the same cable.
+#if defined(CONTROL_PPM_LEFT) && (defined(RC_PWM_LEFT) || defined(SW_PWM_LEFT))
+  #error CONTROL_PPM_LEFT and (RC_PWM_LEFT or SW_PWM_LEFT) not allowed. It is on the same cable.
 #endif
 
 
@@ -813,8 +906,8 @@
   #error CONTROL_PPM_RIGHT and SERIAL_USART3 not allowed. It is on the same cable.
 #endif
 
-#if defined(CONTROL_PWM_RIGHT) && (defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3) || defined(FEEDBACK_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3))
-  #error CONTROL_PWM_RIGHT and SERIAL_USART3 not allowed. It is on the same cable.
+#if (defined(RC_PWM_RIGHT)||defined(SW_PWM_RIGHT)) && (defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3) || defined(FEEDBACK_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3))
+  #error (RC_PWM_RIGHT or SW_PWM_RIGHT) and SERIAL_USART3 not allowed. It is on the same cable.
 #endif
 
 #if defined(DEBUG_I2C_LCD) && (defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3) || defined(FEEDBACK_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3))
@@ -825,20 +918,20 @@
   #error SUPPORT_BUTTONS_RIGHT and SERIAL_USART3 not allowed. It is on the same cable.
 #endif
 
-#if defined(SUPPORT_BUTTONS_RIGHT) && (defined(CONTROL_NUNCHUK) || defined(CONTROL_PPM_RIGHT) || defined(CONTROL_PWM_RIGHT) || defined(DEBUG_I2C_LCD))
-  #error SUPPORT_BUTTONS_RIGHT and (CONTROL_NUNCHUK or CONTROL_PPM_RIGHT or CONTROL_PWM_RIGHT or DEBUG_I2C_LCD) not allowed. It is on the same cable.
+#if defined(SUPPORT_BUTTONS_RIGHT) && (defined(CONTROL_NUNCHUK) || defined(CONTROL_PPM_RIGHT) || defined(RC_PWM_RIGHT) || defined(DEBUG_I2C_LCD))
+  #error SUPPORT_BUTTONS_RIGHT and (CONTROL_NUNCHUK or CONTROL_PPM_RIGHT or RC_PWM_RIGHT or DEBUG_I2C_LCD) not allowed. It is on the same cable.
 #endif
 
-#if defined(CONTROL_NUNCHUK) && (defined(CONTROL_PPM_RIGHT) || defined(CONTROL_PWM_RIGHT) || defined(DEBUG_I2C_LCD))
-  #error CONTROL_NUNCHUK and (CONTROL_PPM_RIGHT or CONTROL_PWM_RIGHT or DEBUG_I2C_LCD) not allowed. It is on the same cable.
+#if defined(CONTROL_NUNCHUK) && (defined(CONTROL_PPM_RIGHT) || defined(RC_PWM_RIGHT)||defined(SW_PWM_RIGHT) || defined(DEBUG_I2C_LCD))
+  #error CONTROL_NUNCHUK and (CONTROL_PPM_RIGHT or RC_PWM_RIGHT or DEBUG_I2C_LCD) not allowed. It is on the same cable.
 #endif
 
-#if defined(DEBUG_I2C_LCD) && (defined(CONTROL_PPM_RIGHT) || defined(CONTROL_PWM_RIGHT))
-  #error DEBUG_I2C_LCD and (CONTROL_PPM_RIGHT or CONTROL_PWM_RIGHT) not allowed. It is on the same cable.
+#if defined(DEBUG_I2C_LCD) && (defined(CONTROL_PPM_RIGHT) || defined(RC_PWM_RIGHT)||defined(SW_PWM_RIGHT))
+  #error DEBUG_I2C_LCD and (CONTROL_PPM_RIGHT or RC_PWM_RIGHT) not allowed. It is on the same cable.
 #endif
 
-#if defined(CONTROL_PPM_RIGHT) && defined(CONTROL_PWM_RIGHT)
-  #error CONTROL_PPM_RIGHT and CONTROL_PWM_RIGHT not allowed. It is on the same cable.
+#if defined(CONTROL_PPM_RIGHT) && (defined(RC_PWM_RIGHT)||defined(SW_PWM_RIGHT))
+  #error CONTROL_PPM_RIGHT and (RC_PWM_RIGHT or SW_PWM_RIGHT) not allowed. It is on the same cable.
 #endif
 
 

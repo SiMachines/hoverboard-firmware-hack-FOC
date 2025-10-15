@@ -50,6 +50,9 @@ extern DMA_HandleTypeDef hdma_usart3_tx;
 /* USER CODE BEGIN 0 */
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
+#if defined(ANALOG_BUTTON)
+extern ADC_HandleTypeDef hadc1;
+#endif
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -170,7 +173,7 @@ void PendSV_Handler(void) {
 void PPM_SysTick_Callback(void);
 #endif
 
-#if defined(CONTROL_PWM_LEFT) || defined(CONTROL_PWM_RIGHT)
+#if defined(RC_PWM_LEFT) || defined(RC_PWM_RIGHT)|| defined(SW_PWM_LEFT) || defined(SW_PWM_RIGHT)|| defined(HW_PWM)
 void PWM_SysTick_Callback(void);
 #endif
 
@@ -185,7 +188,7 @@ void SysTick_Handler(void) {
   PPM_SysTick_Callback();
 #endif
 
-#if defined(CONTROL_PWM_LEFT) || defined(CONTROL_PWM_RIGHT)
+#if defined(RC_PWM_LEFT) || defined(RC_PWM_RIGHT)|| defined(SW_PWM_LEFT) || defined(SW_PWM_RIGHT)|| defined(HW_PWM)
   PWM_SysTick_Callback();
 #endif
   /* USER CODE END SysTick_IRQn 1 */
@@ -249,7 +252,7 @@ void EXTI15_10_IRQHandler(void)
 }
 #endif
 
-#ifdef CONTROL_PWM_LEFT
+#ifdef RC_PWM_LEFT
 void EXTI2_IRQHandler(void)
 {    
   __HAL_GPIO_EXTI_CLEAR_IT(PWM_PIN_CH1);
@@ -262,7 +265,7 @@ void EXTI3_IRQHandler(void)
   PWM_ISR_CH2_Callback();    
 }
 #endif
-#ifdef CONTROL_PWM_RIGHT
+#ifdef RC_PWM_RIGHT
 void EXTI15_10_IRQHandler(void)
 {
   if(__HAL_GPIO_EXTI_GET_IT(PWM_PIN_CH1) != RESET) {
@@ -275,6 +278,33 @@ void EXTI15_10_IRQHandler(void)
   }
 }
 #endif
+#ifdef SW_PWM_LEFT
+void EXTI2_IRQHandler(void)
+{    
+  __HAL_GPIO_EXTI_CLEAR_IT(PWM_PIN_CH1);
+  PWM_ISR_CH1_Callback();
+} 
+void EXTI3_IRQHandler(void)
+{
+  __HAL_GPIO_EXTI_CLEAR_IT(PWM_PIN_CH2);
+  PWM_ISR_CH2_Callback();    
+}
+#endif
+
+#ifdef SW_PWM_RIGHT
+void EXTI15_10_IRQHandler(void)
+{
+  if(__HAL_GPIO_EXTI_GET_IT(PWM_PIN_CH1) != RESET) {
+    __HAL_GPIO_EXTI_CLEAR_IT(PWM_PIN_CH1);
+    PWM_ISR_CH1_Callback();
+  }
+  if(__HAL_GPIO_EXTI_GET_IT(PWM_PIN_CH2) != RESET) {
+    __HAL_GPIO_EXTI_CLEAR_IT(PWM_PIN_CH2);
+    PWM_ISR_CH2_Callback();
+  }
+}
+#endif
+
 
 #if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
 void DMA1_Channel6_IRQHandler(void)
@@ -378,6 +408,25 @@ void USART3_IRQHandler(void)
 /* please refer to the startup file (startup_stm32f1xx.s).                    */
 /******************************************************************************/
 
+#if defined(ANALOG_BUTTON)
+void ADC1_2_IRQHandler(void)
+{
+  /* Forward analog watchdog events into the HAL so the util.c callback can run. */
+  HAL_ADC_IRQHandler(&hadc1);
+}
+#endif
+
+
+#if defined(HW_PWM)
+/**
+  * @brief This function handles TIM3 global interrupt for HW PWM capture.
+  */
+void TIM3_IRQHandler(void)
+{
+  extern TIM_HandleTypeDef TimHandle_PWM;
+  HAL_TIM_IRQHandler(&TimHandle_PWM);
+}
+#endif
 
 /* USER CODE BEGIN 1 */
 

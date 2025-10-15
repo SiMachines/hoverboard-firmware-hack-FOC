@@ -1011,7 +1011,17 @@ uint32_t HAL_RCC_GetSysClockFreq(void)
     }
     case RCC_SYSCLKSOURCE_STATUS_PLLCLK:  /* PLL used as system clock */
     {
-      pllmul = aPLLMULFactorTable[(uint32_t)(tmpreg & RCC_CFGR_PLLMULL) >> RCC_CFGR_PLLMULL_Pos];
+  uint32_t pllmul_idx = (uint32_t)(tmpreg & RCC_CFGR_PLLMULL) >> RCC_CFGR_PLLMULL_Pos;
+#if defined(GD32F103Rx)
+  if ((tmpreg & 0x08000000U) != 0U) {
+    /* GD32 extends PLL multiplier with bit 27 to reach x17..x32 */
+    pllmul = 17U + (pllmul_idx & 0x0FU);
+  } else {
+    pllmul = aPLLMULFactorTable[pllmul_idx];
+  }
+#else
+  pllmul = aPLLMULFactorTable[pllmul_idx];
+#endif
       if ((tmpreg & RCC_CFGR_PLLSRC) != RCC_PLLSOURCE_HSI_DIV2)
       {
 #if defined(RCC_CFGR2_PREDIV1)

@@ -29,6 +29,8 @@
 #include "util.h"
 
 
+
+
 // Matlab includes and defines - from auto-code generation
 // ###############################################################################
 #include "BLDC_controller.h"           /* Model's header file */
@@ -73,7 +75,11 @@ static uint8_t  buzzerIdx   = 0;
 uint8_t        enable       = 0;        // initially motors are disabled for SAFETY
 static uint8_t enableFin    = 0;
 
-static const uint16_t pwm_res  = 64000000 / 2 / PWM_FREQ; // = 2000
+static uint16_t pwm_res;              /* Timer auto-reload value; set during initialization */
+
+void BLDC_SetPwmResolution(uint16_t periodCounts) {
+  pwm_res = periodCounts ? periodCounts : 1U;
+}
 
 static uint16_t offsetcount = 0;
 static int16_t offsetrlA    = 2000;
@@ -85,8 +91,8 @@ static int16_t offsetdcr    = 2000;
 
 int16_t        batVoltage       = (400 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE;
 static int32_t batVoltageFixdt  = (400 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE << 16;  // Fixed-point filter output initialized at 400 V*100/cell = 4 V/cell converted to fixed-point
-int32_t simulated_aligned_count = 0; // For encoder simulation during alignment
-int32_t simulated_mech_angle_deg = 0; // For encoder simulation during alignment
+int32_t emulated_aligned_count = 0; // For encoder simulation during alignment
+int32_t emulated_mech_angle_deg = 0; // For encoder simulation during alignment
 // =================================
 // DMA interrupt frequency =~ 16 kHz
 // =================================
@@ -98,37 +104,51 @@ void DMA1_Channel1_IRQHandler(void) {
 
   if(offsetcount < 2000) {  // calibrate ADC offsets
     offsetcount++;
-    offsetrlA = (adc_buffer.rlA + offsetrlA) / 2;
-    offsetrlB = (adc_buffer.rlB + offsetrlB) / 2;
-    offsetrrB = (adc_buffer.rrB + offsetrrB) / 2;
-    offsetrrC = (adc_buffer.rrC + offsetrrC) / 2;
-    offsetdcl = (adc_buffer.dcl + offsetdcl) / 2;
-    offsetdcr = (adc_buffer.dcr + offsetdcr) / 2;
+  offsetrlA = (adc_buffer.adc12.value.rlA + offsetrlA) / 2;
+  offsetrlB = (adc_buffer.adc12.value.rlB + offsetrlB) / 2;
+  offsetrrB = (adc_buffer.adc12.value.rrB + offsetrrB) / 2;
+  offsetrrC = (adc_buffer.adc12.value.rrC + offsetrrC) / 2;
+  offsetdcl = (adc_buffer.adc12.value.dcl + offsetdcl) / 2;
+  offsetdcr = (adc_buffer.adc12.value.dcr + offsetdcr) / 2;
     return;
   }
 
   if (buzzerTimer % 1000 == 0) {  // Filter battery voltage at a slower sampling rate
-    filtLowPass32(adc_buffer.batt1, BAT_FILT_COEF, &batVoltageFixdt);
+  filtLowPass32(adc_buffer.adc12.value.batt1, BAT_FILT_COEF, &batVoltageFixdt);
     batVoltage = (int16_t)(batVoltageFixdt >> 16);  // convert fixed-point to integer
   }
 
   // Get Left motor currents
-  curL_phaA = (int16_t)(offsetrlA - adc_buffer.rlA);
-  curL_phaB = (int16_t)(offsetrlB - adc_buffer.rlB);
-  curL_DC   = (int16_t)(offsetdcl - adc_buffer.dcl);
+  curL_phaA = (int16_t)(offsetrlA - adc_buffer.adc12.value.rlA);
+  curL_phaB = (int16_t)(offsetrlB - adc_buffer.adc12.value.rlB);
+  curL_DC   = (int16_t)(offsetdcl - adc_buffer.adc12.value.dcl);
   
   // Get Right motor currents
-  curR_phaB = (int16_t)(offsetrrB - adc_buffer.rrB);
-  curR_phaC = (int16_t)(offsetrrC - adc_buffer.rrC);
-  curR_DC   = (int16_t)(offsetdcr - adc_buffer.dcr);
+  curR_phaB = (int16_t)(offsetrrB - adc_buffer.adc12.value.rrB);
+  curR_phaC = (int16_t)(offsetrrC - adc_buffer.adc12.value.rrC);
+  curR_DC   = (int16_t)(offsetdcr - adc_buffer.adc12.value.dcr);
 
   // Disable PWM when current limit is reached (current chopping)
   // This is the Level 2 of current protection. The Level 1 should kick in first given by I_MOT_MAX
+#if defined(HOCP)
+  if (LEFT_TIM->SR & TIM_SR_BIF) {
+    LEFT_TIM->SR &= (uint16_t)~TIM_SR_BIF;
+    enable = 0;
+  }
+#endif
+
   if(ABS(curL_DC) > curDC_max || enable == 0) {
     LEFT_TIM->BDTR &= ~TIM_BDTR_MOE;
   } else {
     LEFT_TIM->BDTR |= TIM_BDTR_MOE;
   }
+
+#if defined(HOCP)
+  if (RIGHT_TIM->SR & TIM_SR_BIF) {
+    RIGHT_TIM->SR &= (uint16_t)~TIM_SR_BIF;
+    enable = 0;
+  }
+#endif
 
   if(ABS(curR_DC)  > curDC_max || enable == 0) {
     RIGHT_TIM->BDTR &= ~TIM_BDTR_MOE;
@@ -146,10 +166,19 @@ void DMA1_Channel1_IRQHandler(void) {
       }
     }
     if (buzzerTimer % buzzerFreq == 0 && (buzzerIdx <= buzzerCount || buzzerCount == 0)) {
-      HAL_GPIO_TogglePin(BUZZER_PORT, BUZZER_PIN);
+      #ifdef BEEPER_OFF
+      HAL_GPIO_WritePin(LED_PORT, LED_PIN, 1);  // add line for LED
+      #else
+      HAL_GPIO_TogglePin(BUZZER_PORT, BUZZER_PIN);   // comment line for BEEPER off
+      #endif
     }
+
   } else if (buzzerPrev) {
-      HAL_GPIO_WritePin(BUZZER_PORT, BUZZER_PIN, GPIO_PIN_RESET);
+      #ifdef BEEPER_OFF
+      HAL_GPIO_WritePin(LED_PORT, LED_PIN, 0);  // add line for LED
+      #else
+      HAL_GPIO_WritePin(BUZZER_PORT, BUZZER_PIN, GPIO_PIN_RESET); 
+      #endif
       buzzerPrev = 0;
   }
 
@@ -173,14 +202,19 @@ void DMA1_Channel1_IRQHandler(void) {
   OverrunFlag = true;
 
   /* Make sure to stop BOTH motors in case of an error */
-  enableFin = enable && !rtY_Left.z_errCode && !rtY_Right.z_errCode;
+  enableFin = enable && !rtY_Left.z_errCode && !rtY_Right.z_errCode && !encoder_alignment_faulted();
  
   // ========================= LEFT MOTOR ============================ 
     // Get hall sensors values
+    #ifndef ENCODER_Y
     uint8_t hall_ul = !(LEFT_HALL_U_PORT->IDR & LEFT_HALL_U_PIN);
     uint8_t hall_vl = !(LEFT_HALL_V_PORT->IDR & LEFT_HALL_V_PIN);
     uint8_t hall_wl = !(LEFT_HALL_W_PORT->IDR & LEFT_HALL_W_PIN);
-    
+    #else //Emulate static hall sensor position if using ENCODER to prevent driver from triggering hall error
+    uint8_t hall_ul = 0;
+    uint8_t hall_vl = 1;
+    uint8_t hall_wl = 0;
+    #endif
     /* Set motor inputs here */
     rtU_Left.b_motEna     = enableFin;
     rtU_Left.z_ctrlModReq = ctrlModReq;  
@@ -191,25 +225,24 @@ void DMA1_Channel1_IRQHandler(void) {
     rtU_Left.i_phaBC      = curL_phaB;
     rtU_Left.i_DCLink     = curL_DC;
     
-    #ifdef ENCODER_L 
-    if (!encoder.align_state) {
+    #ifdef ENCODER_Y
+    if (!encoder_y.align_state) {
       rtU_Left.r_inpTgt = pwml;
     } else {
-      rtU_Left.r_inpTgt = encoder.align_inpTgt;
-       simulated_aligned_count = ((encoder.simulated_mech_count) % (int32_t)ENCODER_CPR + (int32_t)ENCODER_CPR) % (int32_t)ENCODER_CPR;
-       simulated_mech_angle_deg = (simulated_aligned_count * 3600) / (int32_t)ENCODER_CPR;
-      rtU_Left.a_mechAngle = (int16_t)((simulated_mech_angle_deg * 16) / 10);
+      rtU_Left.r_inpTgt = encoder_y.align_inpTgt;
+       emulated_aligned_count = ((encoder_y.emulated_mech_count) % (int32_t)ENCODER_Y_CPR + (int32_t)ENCODER_Y_CPR) % (int32_t)ENCODER_Y_CPR;
+       emulated_mech_angle_deg = (emulated_aligned_count * 3600) / (int32_t)ENCODER_Y_CPR;
+      rtU_Left.a_mechAngle = (int16_t)((emulated_mech_angle_deg * 16) / 10);
     }
-    if (encoder.ali){
-     encoder.current_count = encoder_handle.Instance->CNT;
-     encoder.aligned_count = encoder.current_count - encoder.offset;
-    if (encoder.direction == 0) {
-        encoder.aligned_count = -encoder.aligned_count;
+    if (encoder_y.ali){
+     encoder_y.aligned_count = encoder_y_handle.Instance->CNT;
+    if (encoder_y.direction == 0) {
+        encoder_y.aligned_count = -encoder_y.aligned_count;
     }
-    encoder.aligned_count = (encoder.aligned_count % (int32_t)ENCODER_CPR + (int32_t)ENCODER_CPR) % (int32_t)ENCODER_CPR;
-    encoder.mech_angle_deg = (encoder.aligned_count * 3600) / (int32_t)ENCODER_CPR;
+    encoder_y.aligned_count = (encoder_y.aligned_count % (int32_t)ENCODER_Y_CPR + (int32_t)ENCODER_Y_CPR) % (int32_t)ENCODER_Y_CPR;
+    encoder_y.mech_angle_deg = (encoder_y.aligned_count * 3600) / (int32_t)ENCODER_Y_CPR;
     // Angle input in DEGREES [0,360] in fixdt(1,16,4) data type. If `angle` is float use `= (int16_t)floor(angle * 16.0F)` If `angle` is integer use `= (int16_t)(angle << 4)`
-    rtU_Left.a_mechAngle   = (int16_t)((encoder.mech_angle_deg * 16) / 10); 
+    rtU_Left.a_mechAngle   = (int16_t)((encoder_y.mech_angle_deg * 16) / 10); 
     } 
     #else
     rtU_Left.r_inpTgt = pwml;
@@ -238,10 +271,15 @@ void DMA1_Channel1_IRQHandler(void) {
 
   // ========================= RIGHT MOTOR ===========================  
     // Get hall sensors values
-    
+    #ifndef ENCODER_X 
     uint8_t hall_ur = !(RIGHT_HALL_U_PORT->IDR & RIGHT_HALL_U_PIN);
     uint8_t hall_vr = !(RIGHT_HALL_V_PORT->IDR & RIGHT_HALL_V_PIN);
     uint8_t hall_wr = !(RIGHT_HALL_W_PORT->IDR & RIGHT_HALL_W_PIN);
+    #else  //Emulate static hall sensor position if using ENCODER to prevent driver from triggering hall error
+    uint8_t hall_ur = 0;
+    uint8_t hall_vr = 1;
+    uint8_t hall_wr = 0;
+    #endif
 
     /* Set motor inputs here */
     rtU_Right.b_motEna      = enableFin;
@@ -254,27 +292,29 @@ void DMA1_Channel1_IRQHandler(void) {
     rtU_Right.i_DCLink      = curR_DC;
   
 
-     #ifdef ENCODER 
-    if (!encoder.align_state) {
-      rtU_Right.r_inpTgt = pwml-500;
+     #ifdef ENCODER_X
+    if (!encoder_x.align_state) {
+      rtU_Right.r_inpTgt = pwmr;
     } else {
-      rtU_Right.r_inpTgt = encoder.align_inpTgt;
-       simulated_mech_angle_deg = (encoder.simulated_mech_count * 3600) / (int32_t)ENCODER_CPR;
-      rtU_Right.a_mechAngle = (int16_t)((simulated_mech_angle_deg * 16) / 10);
+      rtU_Right.r_inpTgt = encoder_x.align_inpTgt;
+       emulated_aligned_count = ((encoder_x.emulated_mech_count) % (int32_t)ENCODER_X_CPR + (int32_t)ENCODER_X_CPR) % (int32_t)ENCODER_X_CPR;
+       emulated_mech_angle_deg = (encoder_x.emulated_mech_count * 3600) / (int32_t)ENCODER_X_CPR;
+      rtU_Right.a_mechAngle = (int16_t)((emulated_mech_angle_deg * 16) / 10);
     }
-    if (encoder.ali){
-     encoder.aligned_count = encoder_handle.Instance->CNT;
-      //encoder.aligned_count = encoder.current_count + encoder.offset;
-    if (encoder.direction == 0) {
-       encoder.aligned_count = -encoder.aligned_count;
+    if (encoder_x.ali){
+       
+    if (encoder_x.direction == 1) {
+      encoder_x.aligned_count = encoder_x_handle.Instance->CNT;
+    }else {
+      encoder_x.aligned_count = ENCODER_X_CPR - encoder_x_handle.Instance->CNT;
     }
-    encoder.aligned_count = (encoder.aligned_count % (int32_t)ENCODER_CPR + (int32_t)ENCODER_CPR) % (int32_t)ENCODER_CPR;
-    encoder.mech_angle_deg = (encoder.aligned_count * 3600) / (int32_t)ENCODER_CPR;
+    
+    encoder_x.mech_angle_deg = (encoder_x.aligned_count * 3600) / (int32_t)ENCODER_X_CPR;
     // Angle input in DEGREES [0,360] in fixdt(1,16,4) data type. If `angle` is float use `= (int16_t)floor(angle * 16.0F)` If `angle` is integer use `= (int16_t)(angle << 4)`
-    rtU_Right.a_mechAngle   = (int16_t)((encoder.mech_angle_deg * 16) / 10); 
+    rtU_Right.a_mechAngle   = (int16_t)((encoder_x.mech_angle_deg * 16) / 10); 
     } 
     #else
-    rtU_Right.r_inpTgt = pwml;
+  rtU_Right.r_inpTgt = pwmr;
     //rtU_Right.a_mechAngle   = 0;
     #endif
     

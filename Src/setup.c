@@ -38,11 +38,15 @@ pb10 usart3 dma1 channel2/3
 #include "defines.h"
 #include "config.h"
 #include "setup.h"
+#include "util.h"
 
 TIM_HandleTypeDef htim_right;
 TIM_HandleTypeDef htim_left;
 ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
+#if ADC3_CONVERSION_COUNT > 0
+ADC_HandleTypeDef hadc3;
+#endif
 I2C_HandleTypeDef hi2c2;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
@@ -62,10 +66,10 @@ volatile adc_buf_t adc_buffer;
   __HAL_RCC_DMA1_CLK_ENABLE();
   
   /* DMA1_Channel6_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
   /* DMA1_Channel7_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel7_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel7_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel7_IRQn);
   
   huart2.Instance = USART2;
@@ -89,10 +93,10 @@ void UART3_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Channel2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
   /* DMA1_Channel3_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 3, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
   
   huart3.Instance = USART3;
@@ -161,7 +165,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     __HAL_LINKDMA(uartHandle,hdmatx,hdma_usart2_tx);
 
     /* USART2 interrupt Init */
-    HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
+    HAL_NVIC_SetPriority(USART2_IRQn, 3, 0);
     HAL_NVIC_EnableIRQ(USART2_IRQn);
   /* USER CODE BEGIN USART2_MspInit 1 */
 	__HAL_UART_ENABLE_IT (uartHandle, UART_IT_IDLE);  // Enable the USART IDLE line detection interrupt
@@ -216,7 +220,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     __HAL_LINKDMA(uartHandle,hdmatx,hdma_usart3_tx);
 
     /* USART3 interrupt Init */
-    HAL_NVIC_SetPriority(USART3_IRQn, 0, 0);
+    HAL_NVIC_SetPriority(USART3_IRQn, 3, 0);
     HAL_NVIC_EnableIRQ(USART3_IRQn);
   /* USER CODE BEGIN USART3_MspInit 1 */
 	__HAL_UART_ENABLE_IT (uartHandle, UART_IT_IDLE);  // Enable the USART IDLE line detection interrupt
@@ -400,6 +404,11 @@ void MX_GPIO_Init(void) {
 
   GPIO_InitStruct.Pull = GPIO_NOPULL;
 
+#if defined(ANALOG_BUTTON)
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+#else
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+#endif
   GPIO_InitStruct.Pin = BUTTON_PIN;
   HAL_GPIO_Init(BUTTON_PORT, &GPIO_InitStruct);
 
@@ -414,6 +423,15 @@ void MX_GPIO_Init(void) {
 
   GPIO_InitStruct.Pin = OFF_PIN;
   HAL_GPIO_Init(OFF_PORT, &GPIO_InitStruct);
+
+#if defined(HOCP)
+  GPIO_InitStruct.Mode  = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull  = GPIO_PULLUP;
+  GPIO_InitStruct.Pin   = TIM1_BKIN_PIN;
+  HAL_GPIO_Init(TIM1_BKIN_PORT, &GPIO_InitStruct);
+  GPIO_InitStruct.Pin   = TIM8_BKIN_PIN;
+  HAL_GPIO_Init(TIM8_BKIN_PORT, &GPIO_InitStruct);
+#endif
 
 
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
@@ -435,6 +453,11 @@ void MX_GPIO_Init(void) {
 
   GPIO_InitStruct.Pin = RIGHT_V_CUR_PIN;
   HAL_GPIO_Init(RIGHT_V_CUR_PORT, &GPIO_InitStruct);
+
+#if ADC3_TRIPLE_MODE
+  GPIO_InitStruct.Pin = RIGHT_TX_ADC_PIN | RIGHT_RX_ADC_PIN;
+  HAL_GPIO_Init(RIGHT_TX_ADC_PORT, &GPIO_InitStruct);
+#endif
 
   GPIO_InitStruct.Pin = DCLINK_PIN;
   HAL_GPIO_Init(DCLINK_PORT, &GPIO_InitStruct);
@@ -489,16 +512,27 @@ void MX_GPIO_Init(void) {
 void MX_TIM_Init(void) {
   __HAL_RCC_TIM1_CLK_ENABLE();
   __HAL_RCC_TIM8_CLK_ENABLE();
-
+SET_BIT(DBGMCU->CR,DBGMCU_CR_DBG_TIM1_STOP);
+SET_BIT(DBGMCU->CR,DBGMCU_CR_DBG_TIM8_STOP);
   TIM_MasterConfigTypeDef sMasterConfig;
   TIM_OC_InitTypeDef sConfigOC;
   TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig;
   TIM_SlaveConfigTypeDef sTimConfig;
 
+  /* TIM1/TIM8 reside on APB2; derive their clock dynamically from the clock tree. */
+  uint32_t timClockHz = HAL_RCC_GetPCLK2Freq();
+  if ((RCC->CFGR & RCC_CFGR_PPRE2) != RCC_CFGR_PPRE2_DIV1) {
+    timClockHz *= 2U; // Timer clock doubles when APB prescaler is not 1
+  }
+  uint32_t pwmPeriodCounts = timClockHz / 2U / PWM_FREQ;
+  if (pwmPeriodCounts == 0U) {
+    pwmPeriodCounts = 1U; // Prevent zero period in case of misconfiguration
+  }
+
   htim_right.Instance               = RIGHT_TIM;
   htim_right.Init.Prescaler         = 0;
-  htim_right.Init.CounterMode       = TIM_COUNTERMODE_CENTERALIGNED1;
-  htim_right.Init.Period            = 64000000 / 2 / PWM_FREQ;
+  htim_right.Init.CounterMode       = TIM_COUNTERMODE_CENTERALIGNED3;
+  htim_right.Init.Period            = pwmPeriodCounts;
   htim_right.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
   htim_right.Init.RepetitionCounter = 0;
   htim_right.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -523,15 +557,19 @@ void MX_TIM_Init(void) {
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_ENABLE;
   sBreakDeadTimeConfig.LockLevel        = TIM_LOCKLEVEL_OFF;
   sBreakDeadTimeConfig.DeadTime         = DEAD_TIME;
+#if defined(HOCP)
+  sBreakDeadTimeConfig.BreakState       = TIM_BREAK_ENABLE;
+#else
   sBreakDeadTimeConfig.BreakState       = TIM_BREAK_DISABLE;
+#endif
   sBreakDeadTimeConfig.BreakPolarity    = TIM_BREAKPOLARITY_LOW;
   sBreakDeadTimeConfig.AutomaticOutput  = TIM_AUTOMATICOUTPUT_DISABLE;
   HAL_TIMEx_ConfigBreakDeadTime(&htim_right, &sBreakDeadTimeConfig);
 
   htim_left.Instance               = LEFT_TIM;
   htim_left.Init.Prescaler         = 0;
-  htim_left.Init.CounterMode       = TIM_COUNTERMODE_CENTERALIGNED1;
-  htim_left.Init.Period            = 64000000 / 2 / PWM_FREQ;
+  htim_left.Init.CounterMode       = TIM_COUNTERMODE_CENTERALIGNED3;
+  htim_left.Init.Period            = pwmPeriodCounts;
   htim_left.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
   htim_left.Init.RepetitionCounter = 0;
   htim_left.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -564,7 +602,11 @@ void MX_TIM_Init(void) {
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_ENABLE;
   sBreakDeadTimeConfig.LockLevel        = TIM_LOCKLEVEL_OFF;
   sBreakDeadTimeConfig.DeadTime         = DEAD_TIME;
+#if defined(HOCP)
+  sBreakDeadTimeConfig.BreakState       = TIM_BREAK_ENABLE;
+#else
   sBreakDeadTimeConfig.BreakState       = TIM_BREAK_DISABLE;
+#endif
   sBreakDeadTimeConfig.BreakPolarity    = TIM_BREAKPOLARITY_LOW;
   sBreakDeadTimeConfig.AutomaticOutput  = TIM_AUTOMATICOUTPUT_DISABLE;
   HAL_TIMEx_ConfigBreakDeadTime(&htim_left, &sBreakDeadTimeConfig);
@@ -603,7 +645,11 @@ void MX_ADC1_Init(void) {
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv      = ADC_EXTERNALTRIGCONV_T8_TRGO;
   hadc1.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
+#if defined(ANALOG_BUTTON)
+  hadc1.Init.NbrOfConversion       = 6;
+#else
   hadc1.Init.NbrOfConversion       = 5;
+#endif
   HAL_ADC_Init(&hadc1);
   /**Enable or disable the remapping of ADC1_ETRGREG:
     * ADC1 External Event regular conversion is connected to TIM8 TRG0
@@ -644,6 +690,13 @@ void MX_ADC1_Init(void) {
   sConfig.Rank    = 5;
   HAL_ADC_ConfigChannel(&hadc1, &sConfig);
 
+#if defined(ANALOG_BUTTON)
+  sConfig.SamplingTime = ADC_SAMPLETIME_7CYCLES_5;
+  sConfig.Channel = BUTTON_ADC_CHANNEL;
+  sConfig.Rank    = 6;
+  HAL_ADC_ConfigChannel(&hadc1, &sConfig);
+#endif
+
   hadc1.Instance->CR2 |= ADC_CR2_DMA | ADC_CR2_TSVREFE;
 
   __HAL_ADC_ENABLE(&hadc1);
@@ -651,14 +704,20 @@ void MX_ADC1_Init(void) {
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   DMA1_Channel1->CCR   = 0;
-  DMA1_Channel1->CNDTR = 5;
+  DMA1_Channel1->CNDTR = ADC12_DMA_WORD_COUNT;
   DMA1_Channel1->CPAR  = (uint32_t) & (ADC1->DR);
-  DMA1_Channel1->CMAR  = (uint32_t)&adc_buffer;
+  DMA1_Channel1->CMAR  = (uint32_t)&adc_buffer.adc12.raw[0];
   DMA1_Channel1->CCR   = DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_CIRC | DMA_CCR_TCIE;
   DMA1_Channel1->CCR |= DMA_CCR_EN;
 
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+
+#if defined(ANALOG_BUTTON)
+  HAL_NVIC_SetPriority(ADC1_2_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(ADC1_2_IRQn);
+  AnalogButton_Init();
+#endif
 }
 
 /* ADC2 init function */
@@ -677,7 +736,11 @@ void MX_ADC2_Init(void) {
   hadc2.Init.DiscontinuousConvMode = DISABLE;
   hadc2.Init.ExternalTrigConv      = ADC_SOFTWARE_START;
   hadc2.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
+#if defined(ANALOG_BUTTON)
+  hadc2.Init.NbrOfConversion       = 6;
+#else
   hadc2.Init.NbrOfConversion       = 5;
+#endif
   HAL_ADC_Init(&hadc2);
 
  
@@ -705,6 +768,55 @@ void MX_ADC2_Init(void) {
   sConfig.Rank    = 5;
   HAL_ADC_ConfigChannel(&hadc2, &sConfig);
 
+#if defined(ANALOG_BUTTON)
+  sConfig.Channel = BUTTON_ADC_CHANNEL;
+  sConfig.Rank    = 6;
+  HAL_ADC_ConfigChannel(&hadc2, &sConfig);
+#endif
+
   hadc2.Instance->CR2 |= ADC_CR2_DMA;
   __HAL_ADC_ENABLE(&hadc2);
 }
+
+#if ADC3_CONVERSION_COUNT > 0
+void MX_ADC3_Init(void) {
+  ADC_ChannelConfTypeDef sConfig;
+
+  __HAL_RCC_ADC3_CLK_ENABLE();
+
+  hadc3.Instance                   = ADC3;
+  hadc3.Init.ScanConvMode          = (ADC3_CONVERSION_COUNT > 1U) ? ADC_SCAN_ENABLE : ADC_SCAN_DISABLE;
+  hadc3.Init.ContinuousConvMode    = DISABLE;
+  hadc3.Init.DiscontinuousConvMode = DISABLE;
+  hadc3.Init.ExternalTrigConv      = ADC_EXTERNALTRIGCONV_T8_TRGO;
+  hadc3.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
+  hadc3.Init.NbrOfConversion       = ADC3_CONVERSION_COUNT;
+  HAL_ADC_Init(&hadc3);
+
+  sConfig.SamplingTime = ADC_SAMPLETIME_7CYCLES_5;
+  sConfig.Channel      = RIGHT_TX_ADC_CHANNEL;
+  sConfig.Rank         = ADC_REGULAR_RANK_1;
+  HAL_ADC_ConfigChannel(&hadc3, &sConfig);
+
+  if (ADC3_CONVERSION_COUNT > 1U) {
+    sConfig.Rank    = ADC_REGULAR_RANK_2;
+    sConfig.Channel = RIGHT_RX_ADC_CHANNEL;
+    HAL_ADC_ConfigChannel(&hadc3, &sConfig);
+  }
+
+  hadc3.Instance->CR2 |= ADC_CR2_DMA;
+
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  DMA2_Channel5->CCR  = 0;
+  DMA2_Channel5->CNDTR = ADC3_CONVERSION_COUNT;
+  DMA2_Channel5->CPAR  = (uint32_t)&(ADC3->DR);
+  DMA2_Channel5->CMAR  = (uint32_t)&adc_buffer.adc3.raw[0];
+  DMA2_Channel5->CCR   = DMA_CCR_PSIZE_0 | DMA_CCR_MSIZE_0 | DMA_CCR_MINC | DMA_CCR_CIRC;
+  DMA2_Channel5->CCR  |= DMA_CCR_EN;
+
+  __HAL_ADC_ENABLE(&hadc3);
+}
+#else
+void MX_ADC3_Init(void) { }
+#endif

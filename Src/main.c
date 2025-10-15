@@ -37,6 +37,18 @@
 #endif
 
 void SystemClock_Config(void);
+void verifyClocks(void);
+
+typedef struct {
+  uint32_t sysclk_hz;
+  uint32_t hclk_hz;
+  uint32_t pclk1_hz;
+  uint32_t pclk2_hz;
+  uint32_t tim_apb1_hz;
+  uint32_t tim_apb2_hz;
+} ClockDiagnostics;
+
+volatile ClockDiagnostics g_clockDiag = {0};
 
 //------------------------------------------------------------------------
 // Global variables set externally
@@ -45,6 +57,9 @@ extern TIM_HandleTypeDef htim_left;
 extern TIM_HandleTypeDef htim_right;
 extern ADC_HandleTypeDef hadc1;
 extern ADC_HandleTypeDef hadc2;
+#if ADC3_CONVERSION_COUNT > 0
+extern ADC_HandleTypeDef hadc3;
+#endif
 extern volatile adc_buf_t adc_buffer;
 #if defined(DEBUG_I2C_LCD) || defined(SUPPORT_LCD)
   extern LCD_PCF8574_HandleTypeDef lcd;
@@ -94,11 +109,17 @@ extern SerialSideboard Sideboard_R;
 #if (defined(CONTROL_PPM_LEFT) && defined(DEBUG_SERIAL_USART3)) || (defined(CONTROL_PPM_RIGHT) && defined(DEBUG_SERIAL_USART2))
 extern volatile uint16_t ppm_captured_value[PPM_NUM_CHANNELS+1];
 #endif
-#if (defined(CONTROL_PWM_LEFT) && defined(DEBUG_SERIAL_USART3)) || (defined(CONTROL_PWM_RIGHT) && defined(DEBUG_SERIAL_USART2))
-extern volatile uint16_t pwm_captured_ch1_value;
-extern volatile uint16_t pwm_captured_ch2_value;
+#if (defined(RC_PWM_LEFT) && defined(DEBUG_SERIAL_USART3)) || (defined(RC_PWM_RIGHT) && defined(DEBUG_SERIAL_USART2))
+extern volatile int16_t pwm_captured_ch1_value;
+extern volatile int16_t pwm_captured_ch2_value;
 #endif
-
+#if (defined(SW_PWM_LEFT) && defined(DEBUG_SERIAL_USART3)) || (defined(SW_PWM_RIGHT) && defined(DEBUG_SERIAL_USART2))
+extern volatile int16_t pwm_captured_ch1_value;
+extern volatile int16_t pwm_captured_ch2_value;
+#endif
+#if defined(HW_PWM) && (defined(DEBUG_SERIAL_USART3) || defined(DEBUG_SERIAL_USART2))
+extern volatile int16_t pwm_captured_ch2_value;
+#endif
 
 //------------------------------------------------------------------------
 // Global variables set here in main.c
@@ -193,12 +214,15 @@ int main(void) {
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 
   SystemClock_Config();
+  verifyClocks();
+  
 
   __HAL_RCC_DMA1_CLK_DISABLE();
   MX_GPIO_Init();
   MX_TIM_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
+  MX_ADC3_Init();
   BLDC_Init();        // BLDC Controller Init
 
   HAL_GPIO_WritePin(OFF_PORT, OFF_PIN, GPIO_PIN_SET);   // Activate Latch
@@ -207,21 +231,24 @@ int main(void) {
 
   HAL_ADC_Start(&hadc1);
   HAL_ADC_Start(&hadc2);
+#if ADC3_CONVERSION_COUNT > 0
+  HAL_ADC_Start(&hadc3);
+#endif
 
   poweronMelody();
   HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
   
-  int32_t board_temp_adcFixdt = adc_buffer.temp << 16;  // Fixed-point filter output initialized with current ADC converted to fixed-point
-  int16_t board_temp_adcFilt  = adc_buffer.temp;
+  int32_t board_temp_adcFixdt = adc_buffer.adc12.value.temp << 16;  // Fixed-point filter output initialized with current ADC converted to fixed-point
+  int16_t board_temp_adcFilt  = adc_buffer.adc12.value.temp;
 
   #ifdef MULTI_MODE_DRIVE
-    if (adc_buffer.l_tx2 > input1[0].min + 50 && adc_buffer.l_rx2 > input2[0].min + 50) {
+  if (adc_buffer.adc12.value.l_tx2 > input1[0].min + 50 && adc_buffer.adc12.value.l_rx2 > input2[0].min + 50) {
       drive_mode = 2;
       max_speed = MULTI_MODE_DRIVE_M3_MAX;
       rate = MULTI_MODE_DRIVE_M3_RATE;
       rtP_Left.n_max = rtP_Right.n_max = MULTI_MODE_M3_N_MOT_MAX << 4;
       rtP_Left.i_max = rtP_Right.i_max = (MULTI_MODE_M3_I_MOT_MAX * A2BIT_CONV) << 4;
-    } else if (adc_buffer.l_tx2 > input1[0].min + 50) {
+  } else if (adc_buffer.adc12.value.l_tx2 > input1[0].min + 50) {
       drive_mode = 1;
       max_speed = MULTI_MODE_DRIVE_M2_MAX;
       rate = MULTI_MODE_DRIVE_M2_RATE;
@@ -238,32 +265,43 @@ int main(void) {
     printf("Drive mode %i selected: max_speed:%i acc_rate:%i \r\n", drive_mode, max_speed, rate);
   #endif
 
-  // Loop until button is released
-  while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { HAL_Delay(10); }
+  // Loop until button is released (works for GPIO or analog button builds).
+  while (powerButtonPressed()) { HAL_Delay(10); }
 
   #ifdef MULTI_MODE_DRIVE
     // Wait until triggers are released. Exit if timeout elapses (to unblock if the inputs are not calibrated)
     int iTimeout = 0;
-    while((adc_buffer.l_rx2 + adc_buffer.l_tx2) >= (input1[0].min + input2[0].min) && iTimeout++ < 300) {
+  while((adc_buffer.adc12.value.l_rx2 + adc_buffer.adc12.value.l_tx2) >= (input1[0].min + input2[0].min) && iTimeout++ < 300) {
       HAL_Delay(10);
     }
   #endif
   
   while(1) {
 
-       #ifdef ENCODER
-      if (!encoder.ini){
+       #ifdef ENCODER_X
+      if (!encoder_x.ini){
         // Try to re-initialize the encoder if not yet initialized
-        Encoder_Init();
-      } else if (!encoder.ali) {
+        Encoder_X_Init();
+      } else if (!encoder_x.ali) {
         // Run non-blocking encoder alignment
-        if (encoder.align_state == 0) {
-          Encoder_Align_Start(); // Start alignment if not already running
+        if (encoder_x.align_state == 0) {
+          Encoder_X_Align_Start(); // Start alignment if not already running
         }
-        Encoder_Align(); // Process alignment state machine
+        Encoder_X_Align(); // Process alignment state machine
       }
     #endif
-    
+    #ifdef ENCODER_Y
+      if (!encoder_y.ini){
+        // Try to re-initialize the encoder if not yet initialized
+        Encoder_Y_Init();
+      } else if (!encoder_y.ali) {
+        // Run non-blocking encoder alignment
+        if (encoder_y.align_state == 0) {
+          Encoder_Y_Align_Start(); // Start alignment if not already running
+        }
+        Encoder_Y_Align(); // Process alignment state machine
+      }
+    #endif
     if (buzzerTimer - buzzerTimer_prev > 16*DELAY_IN_MAIN_LOOP) {   // 1 ms = 16 ticks buzzerTimer
 
     readCommand();                        // Read Command: input1[inIdx].cmd, input2[inIdx].cmd
@@ -492,7 +530,7 @@ int main(void) {
 
    
     // ####### CALC BOARD TEMPERATURE #######
-    filtLowPass32(adc_buffer.temp, TEMP_FILT_COEF, &board_temp_adcFixdt);
+  filtLowPass32(adc_buffer.adc12.value.temp, TEMP_FILT_COEF, &board_temp_adcFixdt);
     board_temp_adcFilt  = (int16_t)(board_temp_adcFixdt >> 16);  // convert fixed-point to integer
     board_temp_deg_c    = (TEMP_CAL_HIGH_DEG_C - TEMP_CAL_LOW_DEG_C) * (board_temp_adcFilt - TEMP_CAL_LOW_ADC) / (TEMP_CAL_HIGH_ADC - TEMP_CAL_LOW_ADC) + TEMP_CAL_LOW_DEG_C;
 
@@ -510,15 +548,21 @@ int main(void) {
         #if defined(DEBUG_SERIAL_PROTOCOL)
           process_debug();
         #else
-          printf("in1:%i in2:%i cmdL:%i cmdR:%i BatADC:%i BatV:%i TempADC:%i Temp:%i \r\n",
+          printf("in1:%i in2:%i cmdL:%i cmdR:%i BatADC:%i BatV:%i TempADC:%i Temp:%i",
             input1[inIdx].raw,        // 1: INPUT1
             input2[inIdx].raw,        // 2: INPUT2
             cmdL,                     // 3: output command: [-1000, 1000]
             cmdR,                     // 4: output command: [-1000, 1000]
-            adc_buffer.batt1,         // 5: for battery voltage calibration
+            adc_buffer.adc12.value.batt1,         // 5: for battery voltage calibration
             batVoltageCalib,          // 6: for verifying battery voltage calibration
             board_temp_adcFilt,       // 7: for board temperature calibration
             board_temp_deg_c);        // 8: for verifying board temperature calibration
+#if ADC3_CONVERSION_COUNT > 0
+          printf(" RightADC:%u,%u",
+            (unsigned)adc_buffer.adc3.value.r_tx2,
+            (unsigned)adc_buffer.adc3.value.r_rx2);
+#endif
+          printf(" \r\n");
         #endif
       }
     #endif
@@ -629,43 +673,132 @@ int main(void) {
 /** System Clock Configuration
 */
 void SystemClock_Config(void) {
+#if !defined(GD32F103Rx)
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
   RCC_PeriphCLKInitTypeDef PeriphClkInit;
+#endif
 
+#if defined(GD32F103Rx)
+  /* Direct clock tree setup for GD32F103: target 108 MHz from HSI/2 with PLL x27. */
+  /* Ensure HSI is ready */
+  SET_BIT(RCC->CR, RCC_CR_HSION);
+  while (READ_BIT(RCC->CR, RCC_CR_HSIRDY) == 0U) {
+    /* wait */
+  }
+
+  /* Disable PLL before reconfiguration */
+  CLEAR_BIT(RCC->CR, RCC_CR_PLLON);
+  while (READ_BIT(RCC->CR, RCC_CR_PLLRDY) != 0U) {
+    /* wait for PLL to stop */
+  }
+
+  /* Configure Flash wait states and enable prefetch for >72 MHz operation */
+  MODIFY_REG(FLASH->ACR, FLASH_ACR_LATENCY | FLASH_ACR_PRFTBE,
+             FLASH_ACR_LATENCY_2 | FLASH_ACR_PRFTBE);
+
+  /* AHB = SYSCLK, APB2 = AHB, APB1 = AHB/2 */
+  MODIFY_REG(RCC->CFGR,
+             RCC_CFGR_HPRE | RCC_CFGR_PPRE2 | RCC_CFGR_PPRE1,
+             RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE2_DIV1 | RCC_CFGR_PPRE1_DIV2);
+
+  /* Use HSI/2 as PLL source and set multiplier to x27 (bits 21:18 = 0x0A, bit 27 = 1) */
+  MODIFY_REG(RCC->CFGR,
+             RCC_CFGR_PLLSRC | RCC_CFGR_PLLMULL | 0x08000000U,
+             RCC_PLLSOURCE_HSI_DIV2 | ((uint32_t)0x0A << 18) | 0x08000000U);
+
+  /* Configure ADC prescaler to keep ADC clock within specification (18 MHz) */
+  MODIFY_REG(RCC->CFGR, RCC_CFGR_ADCPRE, RCC_CFGR_ADCPRE_DIV6);
+
+  /* Enable PLL and wait until locked */
+  SET_BIT(RCC->CR, RCC_CR_PLLON);
+  while (READ_BIT(RCC->CR, RCC_CR_PLLRDY) == 0U) {
+    /* wait */
+  }
+
+  /* Switch system clock to PLL */
+  MODIFY_REG(RCC->CFGR, RCC_CFGR_SW, RCC_CFGR_SW_PLL);
+  while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL) {
+    /* wait */
+  }
+
+#else
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_PeriphCLKInitTypeDef PeriphClkInit;
   /**Initializes the CPU, AHB and APB busses clocks
     */
-  RCC_OscInitStruct.OscillatorType      = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState            = RCC_HSI_ON;
+  RCC_OscInitStruct.OscillatorType      = RCC_OSCILLATORTYPE_HSI; //0x00000002U
+  RCC_OscInitStruct.HSIState            = RCC_HSI_ON; //(0x1UL << (0U))
   RCC_OscInitStruct.HSICalibrationValue = 16;
-  RCC_OscInitStruct.PLL.PLLState        = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource       = RCC_PLLSOURCE_HSI_DIV2;
-  RCC_OscInitStruct.PLL.PLLMUL          = RCC_PLL_MUL16;
+  RCC_OscInitStruct.PLL.PLLState        = RCC_PLL_ON; //0x00000002U
+  RCC_OscInitStruct.PLL.PLLSource       = RCC_PLLSOURCE_HSI_DIV2; //0x00000000U
+  RCC_OscInitStruct.PLL.PLLMUL          = RCC_PLL_MUL16; //(0x7UL << (19U))
   HAL_RCC_OscConfig(&RCC_OscInitStruct);
 
   /**Initializes the CPU, AHB and APB busses clocks
     */
-  RCC_ClkInitStruct.ClockType           = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource        = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider       = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider      = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider      = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.ClockType           = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2; //0x00000002U, 0x00000001U, 0x00000004U, 0x00000008U
+  RCC_ClkInitStruct.SYSCLKSource        = RCC_SYSCLKSOURCE_PLLCLK; //0x00000002U
+  RCC_ClkInitStruct.AHBCLKDivider       = RCC_SYSCLK_DIV1; //0x00000000U
+  RCC_ClkInitStruct.APB1CLKDivider      = RCC_HCLK_DIV2; //0x00000400U
+  RCC_ClkInitStruct.APB2CLKDivider      = RCC_HCLK_DIV1; //0x00000000U
 
   HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2);
 
-  PeriphClkInit.PeriphClockSelection    = RCC_PERIPHCLK_ADC;
+  PeriphClkInit.PeriphClockSelection    = RCC_PERIPHCLK_ADC; //0x00000002U
   // PeriphClkInit.AdcClockSelection    = RCC_ADCPCLK2_DIV8;  // 8 MHz
   PeriphClkInit.AdcClockSelection       = RCC_ADCPCLK2_DIV4;  // 16 MHz
   HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit);
+#endif
+
+  SystemCoreClockUpdate();
 
   /**Configure the Systick interrupt time
     */
-  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq() / 1000);
+  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq() / 1000U);
 
   /**Configure the Systick
     */
-  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK); //0x00000004U
 
   /* SysTick_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
+
+
+void verifyClocks(void) {
+  uint32_t sysclk = SystemCoreClock;  // SystemCoreClockUpdate already reflects the GD32 108 MHz setup
+  uint32_t hclk   = HAL_RCC_GetHCLKFreq();
+  uint32_t pclk1  = HAL_RCC_GetPCLK1Freq();
+  uint32_t pclk2  = HAL_RCC_GetPCLK2Freq();
+  uint32_t tim_apb2 = pclk2;
+  if ((RCC->CFGR & RCC_CFGR_PPRE2) != RCC_CFGR_PPRE2_DIV1) {
+    tim_apb2 *= 2U;
+  }
+  uint32_t tim_apb1 = pclk1;
+  if ((RCC->CFGR & RCC_CFGR_PPRE1) != RCC_CFGR_PPRE1_DIV1) {
+    tim_apb1 *= 2U;
+  }
+
+  g_clockDiag.sysclk_hz   = sysclk;
+  g_clockDiag.hclk_hz     = hclk;
+  g_clockDiag.pclk1_hz    = pclk1;
+  g_clockDiag.pclk2_hz    = pclk2;
+  g_clockDiag.tim_apb1_hz = tim_apb1;
+  g_clockDiag.tim_apb2_hz = tim_apb2;
+
+#if defined(DEBUG_SERIAL_USART2) || defined(DEBUG_SERIAL_USART3)
+  printf("Clock tree: SYSCLK=%lu Hz HCLK=%lu Hz PCLK1=%lu Hz PCLK2=%lu Hz TIM(APB1)=%lu Hz TIM(APB2)=%lu Hz\r\n",
+         sysclk, hclk, pclk1, pclk2, tim_apb1, tim_apb2);
+#else
+  (void)sysclk;
+  (void)hclk;
+  (void)pclk1;
+  (void)pclk2;
+  (void)tim_apb1;
+  (void)tim_apb2;
+#endif
+}
+
+

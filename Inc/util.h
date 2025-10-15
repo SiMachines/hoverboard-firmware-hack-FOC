@@ -67,45 +67,51 @@ typedef struct {
   int16_t   dband;  // deadband
 } InputStruct;
 
-#ifdef ENCODER
+#if defined(ENCODER_X) || defined(ENCODER_Y)
 typedef struct {
   boolean_T ini;
   boolean_T ali;
+  boolean_T align_fault;
   int32_t offset;
   boolean_T direction; // 1 = CW, 0 = CCW
-  int32_t current_count;
-  int32_t aligned_count;
+  uint32_t aligned_count;
   int32_t mech_angle_deg;
   int16_t align_inpTgt; // in util.c or as part of encoder struct
   // Non-blocking alignment state variables
-  uint8_t align_state;               // Current alignment state (0=inactive, 1=power_ramp, 2=rotation, 3=high_power)
+  uint8_t align_state;               // Current alignment state 
   uint32_t align_timer;              // Timer for alignment sequence timing
   uint32_t align_start_time;         // Start time for alignment
   int32_t align_ini_pos;             // Initial encoder position before alignment
   // Mechanical angle simulation variables (integer only)
-  int32_t simulated_mech_count;      // Simulated encoder count for mechanical angle
+  int32_t emulated_mech_count;      // emulated encoder count for mechanical angle
   int32_t count_increment_x1000;    // Count increment per tick * 1000 (for precision)
   uint32_t power_ramp_timer;         // Timer for power ramping phases
 } SensorState;
-extern SensorState encoder;
-    uint8_t hall_ul;
-    uint8_t hall_vl;
-    uint8_t hall_wl;
-TIM_HandleTypeDef encoder_handle;
+#endif
+
+#ifdef ENCODER_X
+extern SensorState encoder_x;
+extern TIM_HandleTypeDef encoder_x_handle;
+void Encoder_X_Init(void);
+void Encoder_X_Align(void);
+void Encoder_X_Align_Start(void);
+boolean_T encoder_alignment_faulted(void);
+#endif
+
+#ifdef ENCODER_Y
+extern SensorState encoder_y;
+extern TIM_HandleTypeDef encoder_y_handle;
+void Encoder_Y_Init(void);
+void Encoder_Y_Align(void);
+void Encoder_Y_Align_Start(void);
 #endif
 
 // Initialization Functions
 void BLDC_Init(void);
+void BLDC_SetPwmResolution(uint16_t periodCounts);
 void Input_Lim_Init(void);
 void Input_Init(void);
 void UART_DisableRxErrors(UART_HandleTypeDef *huart);
-#if defined (ENCODER)
-void Encoder_Init(void);
-void Encoder_Align(void);
-void Encoder_Align_NonBlocking(void);  // Non-blocking encoder alignment state machine - call from main loop
-void Encoder_Align_Start(void);        // Start non-blocking encoder alignment sequence
-#endif
-
 // General Functions
 void poweronMelody(void);
 void beepCount(uint8_t cnt, uint8_t freq, uint8_t pattern);
@@ -145,6 +151,12 @@ void sideboardSensors(uint8_t sensors);
 void saveConfig(void);
 void poweroff(void);
 void poweroffPressCheck(void);
+uint8_t powerButtonPressed(void);
+
+#if defined(ANALOG_BUTTON)
+void AnalogButton_Init(void);
+void AnalogButton_HandleWatchdog(void);
+#endif
 
 // Filtering Functions
 void filtLowPass32(int32_t u, uint16_t coef, int32_t *y);

@@ -75,6 +75,7 @@
   */
 
 #include "stm32f1xx.h"
+#include "config.h"
 
 /**
   * @}
@@ -135,6 +136,8 @@
 *******************************************************************************/
 #if defined(STM32F100xB) || defined(STM32F100xE)
 uint32_t SystemCoreClock = 24000000U; /*!< System Clock Frequency (Core Clock) */
+#elif defined GD32F103Rx
+uint32_t SystemCoreClock = 108000000U;/*!< System Clock Frequency (Core Clock) */
 #else /*!< HSI Selected as System Clock source */
 uint32_t SystemCoreClock = 72000000U; /*!< System Clock Frequency (Core Clock) */
 #endif
@@ -289,7 +292,16 @@ void SystemCoreClockUpdate(void) {
       pllsource = RCC->CFGR & RCC_CFGR_PLLSRC;
 
 #if !defined(STM32F105xC) && !defined(STM32F107xC)
-      pllmull = (pllmull >> 18U) + 2U;
+  pllmull = pllmull >> 18U;
+#if defined(GD32F103Rx)
+  if ((RCC->CFGR & 0x08000000U) != 0U) {
+    pllmull = 17U + (pllmull & 0x0FU);
+  } else {
+    pllmull += 2U;
+  }
+#else
+  pllmull += 2U;
+#endif
 
       if(pllsource == 0x00U) {
         /* HSI oscillator clock divided by 2 selected as PLL clock entry */

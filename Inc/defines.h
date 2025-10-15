@@ -100,8 +100,48 @@
 #define RIGHT_U_CUR_PORT GPIOC
 #define RIGHT_V_CUR_PORT GPIOC
 
+#if defined(ADC3_RIGHT_POTENTIOMETERS)
+#define ADC3_TRIPLE_MODE 1
+#else
+#define ADC3_TRIPLE_MODE 0
+#endif
+
+#if defined(ANALOG_BUTTON)
+#define ADC12_DMA_WORD_COUNT 6U
+#else
+#define ADC12_DMA_WORD_COUNT 5U
+#endif
+
+#if ADC3_TRIPLE_MODE
+#define ADC3_CONVERSION_COUNT 2U
+#define RIGHT_TX_ADC_PIN        GPIO_PIN_0
+#define RIGHT_TX_ADC_PORT       GPIOB
+#define RIGHT_RX_ADC_PIN        GPIO_PIN_1
+#define RIGHT_RX_ADC_PORT       GPIOB
+#define RIGHT_TX_ADC_CHANNEL    ADC_CHANNEL_8
+#define RIGHT_RX_ADC_CHANNEL    ADC_CHANNEL_9
+#else
+#define ADC3_CONVERSION_COUNT 0U
+#endif
 // #define DCLINK_ADC ADC3
 // #define DCLINK_CHANNEL
+#ifdef ENCODER_Y
+#define ENCODER_Y_CPR              (ENCODER_Y_PPR * 4)
+#define ENCODER_Y_TIMER            TIM3
+#define ENCODER_Y_CHA_PORT         GPIOB
+#define ENCODER_Y_CHB_PORT         GPIOB
+#define ENCODER_Y_CHA_PIN          GPIO_PIN_4
+#define ENCODER_Y_CHB_PIN          GPIO_PIN_5
+#endif
+
+#ifdef ENCODER_X
+#define ENCODER_X_CPR              (ENCODER_X_PPR * 4)
+#define ENCODER_X_TIMER            TIM4
+#define ENCODER_X_CHA_PORT         GPIOB
+#define ENCODER_X_CHB_PORT         GPIOB
+#define ENCODER_X_CHA_PIN          GPIO_PIN_7
+#define ENCODER_X_CHB_PIN          GPIO_PIN_6
+#endif
 
 #if BOARD_VARIANT == 0
 #define DCLINK_PIN GPIO_PIN_2
@@ -144,6 +184,12 @@
 #define BUTTON_PIN GPIO_PIN_9
 #define BUTTON_PORT GPIOB
 #endif
+#if defined(ANALOG_BUTTON)
+  #if BOARD_VARIANT != 0
+    #error "ANALOG_BUTTON is only supported on BOARD_VARIANT 0"
+  #endif
+  #define BUTTON_ADC_CHANNEL        ADC_CHANNEL_1
+#endif
 
 #if BOARD_VARIANT == 0
 #define CHARGER_PIN GPIO_PIN_12
@@ -161,16 +207,40 @@
 #define PPM_PORT            GPIOB
 #endif
 
-#if defined(CONTROL_PWM_LEFT)
+#if defined(RC_PWM_LEFT)
 #define PWM_PIN_CH1         GPIO_PIN_2
 #define PWM_PORT_CH1        GPIOA
 #define PWM_PIN_CH2         GPIO_PIN_3
 #define PWM_PORT_CH2        GPIOA
-#elif defined(CONTROL_PWM_RIGHT)
+#elif defined(RC_PWM_RIGHT)
 #define PWM_PIN_CH1         GPIO_PIN_10
 #define PWM_PORT_CH1        GPIOB
 #define PWM_PIN_CH2         GPIO_PIN_11
 #define PWM_PORT_CH2        GPIOB
+#endif
+
+#if defined(SW_PWM_LEFT) 
+#define PWM_PIN_CH1         GPIO_PIN_2
+#define PWM_PORT_CH1        GPIOA
+#define PWM_PIN_CH2         GPIO_PIN_3
+#define PWM_PORT_CH2        GPIOA
+#elif defined(SW_PWM_RIGHT)
+#define PWM_PIN_CH1         GPIO_PIN_10
+#define PWM_PORT_CH1        GPIOB
+#define PWM_PIN_CH2         GPIO_PIN_11
+#define PWM_PORT_CH2        GPIOB
+#endif
+
+#if defined(HW_PWM)
+#define PWM_PIN_CH2         GPIO_PIN_5
+#define PWM_PORT_CH2        GPIOB
+#endif
+
+#if defined(HOCP)
+#define TIM1_BKIN_PIN       GPIO_PIN_6
+#define TIM1_BKIN_PORT      GPIOA
+#define TIM8_BKIN_PIN       GPIO_PIN_12
+#define TIM8_BKIN_PORT      GPIOB
 #endif
 
 #if defined(SUPPORT_BUTTONS_LEFT)
@@ -218,8 +288,8 @@
 
 
 typedef struct {
-  uint16_t dcr; 
-  uint16_t dcl; 
+  uint16_t dcr;
+  uint16_t dcl;
   uint16_t rlA;
   uint16_t rlB;
   uint16_t rrB;
@@ -228,6 +298,37 @@ typedef struct {
   uint16_t l_tx2;
   uint16_t temp;
   uint16_t l_rx2;
+#if defined(ANALOG_BUTTON)
+  uint16_t button;
+  uint16_t button_aux;
+#endif
+} adc12_named_samples_t;
+
+typedef union {
+  adc12_named_samples_t value;
+  uint32_t raw[ADC12_DMA_WORD_COUNT];
+} adc12_dma_buffer_t;
+
+#if ADC3_CONVERSION_COUNT > 0
+#if ADC3_CONVERSION_COUNT != 2
+#error "ADC3_CONVERSION_COUNT must equal 2 to match adc3_named_samples_t layout"
+#endif
+typedef struct {
+  uint16_t r_tx2;
+  uint16_t r_rx2;
+} adc3_named_samples_t;
+
+typedef union {
+  adc3_named_samples_t value;
+  uint16_t raw[ADC3_CONVERSION_COUNT];
+} adc3_dma_buffer_t;
+#endif
+
+typedef struct {
+  adc12_dma_buffer_t adc12;
+#if ADC3_CONVERSION_COUNT > 0
+  adc3_dma_buffer_t adc3;
+#endif
 } adc_buf_t;
 
 typedef enum {
