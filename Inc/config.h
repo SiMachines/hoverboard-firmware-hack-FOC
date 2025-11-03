@@ -78,7 +78,7 @@
 #define BAT_FILT_COEF           6553       // battery voltage filter coefficient in fixed-point. coef_fixedPoint = coef_floatingPoint * 2^16. In this case 655 = 0.01 * 2^16
 #define BAT_CALIB_REAL_VOLTAGE  3970      // input voltage measured by multimeter (multiplied by 100). In this case 43.00 V * 100 = 4300
 #define BAT_CALIB_ADC           1492      // adc-value measured by mainboard (value nr 5 on UART debug output)
-#define BAT_CELLS               10       // battery number of cells. Normal Hoverboard battery: 10s = 36V nominal, 42V full charge. For 36V battery use 10, for 24V use 6, for 48V use 13 etc.
+#define BAT_CELLS               5       // battery number of cells. Normal Hoverboard battery: 10s = 36V nominal, 42V full charge. For 36V battery use 10, for 24V use 6, for 48V use 13 etc.
 #define BAT_LVL2_ENABLE         0         // to beep or not to beep, 1 or 0
 #define BAT_LVL1_ENABLE         0         // to beep or not to beep, 1 or 0
 #define BAT_DEAD_ENABLE         1         // to poweroff or not to poweroff, 1 or 0
@@ -670,7 +670,7 @@
 #define HOCP                        // Tie PA6/PB12 hardware over-current signals into TIM1/TIM8 break inputs
 #define BEEPER_OFF
 #define ENCODER_X
-//#define ENCODER_Y
+#define ENCODER_Y
 #define INTBRK_L_EN
 //#define EXTBRK_EN                   // Enable external braking resistor pin
 #ifdef EXTBRK_EN
@@ -720,8 +720,8 @@
 #undef FIELD_WEAK_ENA
 #define FIELD_WEAK_ENA           0 
 //#define RC_PWM_RIGHT           0         // use RC PWM as input on the RIGHT cable.  Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART3!
-#define HW_PWM                   0 
-//#define SW_PWM_RIGHT           0         // UsingPWM input capture on PB10 and PB11 (duty cycle mapped to 0 to -1000, 0, 1000,)
+//#define HW_PWM                   0 
+#define SW_PWM_RIGHT           0         // UsingPWM input capture on PB10 and PB11 (duty cycle mapped to 0 to -16000, 0, 16000,)
 //#define SW_PWM_LEFT            0 
 //#define CONTROL_PPM_LEFT 0
 //#define PPM_NUM_CHANNELS 1
