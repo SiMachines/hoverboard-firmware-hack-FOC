@@ -8,7 +8,7 @@ For general setup instructions, hardware information, and base firmware features
 
 ---
 
-## Key Improvements Over Stock Firmware
+## Key Improvements Over Original Repository
 
 1. **Smooth Torque Output at Zero RPM**
 
@@ -145,14 +145,14 @@ Choose your preferred input method:
 
 ```c
 // Hardware PWM (best performance)
-#define HW_PWM                     0        // Priority 0 (highest)
+#define HW_PWM                     0        // Priority 0 (highest), HW pwm outputs to Right Motor
 ```
 
 ### Input Range Configuration
 
 ```c
-#define PRI_INPUT1                 0, -16000, 0, 16000, 0
-#define PRI_INPUT2                 2, -16000, 0, 16000, 0
+#define PRI_INPUT1                 0, -16000, 0, 16000, 0  //Left Motor disabled
+#define PRI_INPUT2                 2, -16000, 0, 16000, 0  //Right Motor Output
 // Format: TYPE, MIN, MID, MAX, DEADBAND
 //   TYPE: 0=Disabled, 1=Normal Pot, 2=Middle Resting, 3=Auto-detect
 //   MIN/MAX: Input signal range
@@ -174,12 +174,11 @@ Lower `RATE` values make acceleration smoother but slower. Lower `FILTER` values
 ```c
 //#define INVERT_R_DIRECTION                // Uncomment to reverse motor direction
 ```
-
 ---
 
 ## TWO_AXIS_VARIANT Setup
 
-Dual motor control with encoders on both motors - perfect for differential drive robots, dual-axis CNC, or coordinated multi-motor systems.
+Dual motor control with encoders on both motors - default setup is for ffb joystick or seat belt puller using Software pwm inputs on right side uart port and external brake resistor on PA2 left uart port
 
 ### Encoder Configuration
 
@@ -200,14 +199,6 @@ Dual motor control with encoders on both motors - perfect for differential drive
 #define MOTOR_LEFT_ENA                      // Enable left motor
 #define MOTOR_RIGHT_ENA                     // Enable right motor
 ```
-
-### Tank Steering
-
-```c
-#define TANK_STEERING                       // Enable independent wheel control
-                                            // Each input controls one motor directly
-```
-
 ### Current and Speed Limits
 
 ```c
@@ -225,7 +216,7 @@ External brake resistor configuration (same as single-axis):
 #define EXTBRK_USE_CH3                      // Use channel 3 output
 
 #define BRAKE_RESISTANCE           300      // [Ohm × 100]
-#define BRKRESACT_SENS            40/20     // [A] Activation threshold
+#define BRKRESACT_SENS            40/20     // [A] Activation threshold (40mA typical), increase in 20mA steps if braking resistor gets warm while wheel is stationary
 #define MAX_REGEN_CURRENT         0/20      // [A] Set to 0 for PSU operation
 ```
 
@@ -241,7 +232,7 @@ External brake resistor configuration (same as single-axis):
 ### Motor Direction
 
 ```c
-#define INVERT_R_DIRECTION                  // Invert right motor
+//#define INVERT_R_DIRECTION                  // Invert right motor
 //#define INVERT_L_DIRECTION                // Invert left motor if needed
 ```
 
