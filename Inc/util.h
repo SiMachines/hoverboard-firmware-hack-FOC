@@ -127,9 +127,8 @@ void handle_y_high_power_phase(uint32_t elapsed_ticks, uint32_t ramp_ms, uint32_
 void handle_y_move_back_phase(uint32_t elapsed_ticks, uint32_t ramp_ms, uint32_t move_ms, uint32_t current_time);
 void finalize_y_alignment(void);
 #endif
-#if defined(ENCODER_X) || defined(ENCODER_Y)
-boolean_T encoder_alignment_faulted(void);
-#endif
+
+
 // Initialization Functions
 void BLDC_Init(void);
 void BLDC_SetPwmResolution(uint16_t periodCounts);
@@ -149,6 +148,7 @@ void standstillHold(void);
 void electricBrake(uint16_t speedBlend, uint8_t reverseDir);
 void cruiseControl(uint8_t button);
 int  checkInputType(int16_t min, int16_t mid, int16_t max);
+boolean_T encoder_alignment_faulted(void);
 
 // Input Functions
 void calcInputCmd(InputStruct *in, int16_t out_min, int16_t out_max);

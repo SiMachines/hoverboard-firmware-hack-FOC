@@ -177,15 +177,16 @@ SensorState encoder_y = {0}; // Initialize all members to 0/false
 TIM_HandleTypeDef encoder_y_handle;
 #endif
 
-#if defined(ENCODER_X) || defined(ENCODER_Y)
 
 inline boolean_T encoder_alignment_faulted(void) {
 #if defined(ENCODER_X) && defined(ENCODER_Y)
   return (encoder_x.align_fault != 0U) || (encoder_y.align_fault != 0U);
 #elif defined(ENCODER_X)
   return (encoder_x.align_fault != 0U);
-#else
+#elif defined(ENCODER_Y)
   return (encoder_y.align_fault != 0U);
+#else 
+return 0;
 #endif
 }
 
@@ -194,11 +195,13 @@ static inline boolean_T encoder_alignment_active(void) {
   return (encoder_x.align_state != 0U) || (encoder_y.align_state != 0U);
 #elif defined(ENCODER_X)
   return (encoder_x.align_state != 0U);
-#else
+#elif  defined(ENCODER_Y)
   return (encoder_y.align_state != 0U);
+#else 
+return 0;
 #endif
 }
-#endif
+
 
 extern uint8_t buzzerFreq;              // global variable for the buzzer pitch. can be 1, 2, 3, 4, 5, 6, 7...
 extern uint8_t buzzerPattern;           // global variable for the buzzer pattern. can be 1, 2, 3, 4, 5, 6, 7...
