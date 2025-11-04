@@ -106,7 +106,7 @@
  * Enable warning and/or poweroff and make and flash firmware.
 */
 // Comment out ENABLE_BOARD_TEMP_SENSOR to skip measuring the MCU temperature sensor.
-//define ENABLE_BOARD_TEMP_SENSOR
+//#define ENABLE_BOARD_TEMP_SENSOR
 #define TEMP_FILT_COEF          655       // temperature filter coefficient in fixed-point. coefFixedPoint = coef_floatingPoint * 2^16. In this case 655 = 0.01 * 2^16
 #define TEMP_CAL_LOW_ADC        1655      // temperature 1: ADC value
 #define TEMP_CAL_LOW_DEG_C      358       // temperature 1: measured temperature [°C * 10]. Here 35.8 °C

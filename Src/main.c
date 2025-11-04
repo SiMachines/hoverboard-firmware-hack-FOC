@@ -100,7 +100,8 @@ extern volatile int pwmr;               // global variable for pwm right. -1000 
 extern uint8_t enable;                  // global variable for motor enable
 
 extern int16_t batVoltage;              // global variable for battery voltage
-
+int32_t board_temp_adcFixdt = 0;  
+int16_t board_temp_adcFilt = 0;
 
 #if defined(CONTROL_PPM_LEFT) || defined(CONTROL_PPM_RIGHT)
       volatile boolean_T ppm_ready = 0;
@@ -255,8 +256,8 @@ int main(void) {
   #endif
   
 #if defined(ENABLE_BOARD_TEMP_SENSOR)
-  int32_t board_temp_adcFixdt = adc_buffer.adc12.value.temp << 16;  // Fixed-point filter output initialized with current ADC converted to fixed-point
-  int16_t board_temp_adcFilt  = adc_buffer.adc12.value.temp;
+   board_temp_adcFixdt = adc_buffer.adc12.value.temp << 16;  // Fixed-point filter output initialized with current ADC converted to fixed-point
+   board_temp_adcFilt  = adc_buffer.adc12.value.temp;
 #endif
 
   #ifdef MULTI_MODE_DRIVE
@@ -738,11 +739,6 @@ int main(void) {
 /** System Clock Configuration
 */
 void SystemClock_Config(void) {
-#if !defined(GD32F103Rx)
-  RCC_OscInitTypeDef RCC_OscInitStruct;
-  RCC_ClkInitTypeDef RCC_ClkInitStruct;
-  RCC_PeriphCLKInitTypeDef PeriphClkInit;
-#endif
 
 #if defined(GD32F103Rx)
   /* Direct clock tree setup for GD32F103: target 108 MHz from HSI/2 with PLL x27. */
