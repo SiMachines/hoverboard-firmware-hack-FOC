@@ -4,14 +4,14 @@
 
 This is a fork of the [hoverboard-firmware-hack-FOC](https://github.com/EFeru/hoverboard-firmware-hack-FOC) project that adds AB encoder support and brake resistor functionality for precision motor control applications. 
 
-For this fork instructions please check comments in config.h when modifyng and check [wiki](https://github.com/SiMachines/hoverboard-firmware-hack-FOC/wiki/Connections)
+## For this fork instructions please check [wiki](https://github.com/SiMachines/hoverboard-firmware-hack-FOC/wiki/Connections)
 
 For general setup instructions, hardware information, and base firmware features, please refer to the [original repository](https://github.com/EFeru/hoverboard-firmware-hack-FOC).
 
 
 ---
 
-## Key Improvements Over Original Repository
+### Key Improvements Over Original Repository
 
 1. **Smooth Torque Output at Zero RPM**
 
