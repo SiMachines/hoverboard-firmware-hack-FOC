@@ -78,7 +78,7 @@
 #define BAT_FILT_COEF           6553       // battery voltage filter coefficient in fixed-point. coef_fixedPoint = coef_floatingPoint * 2^16. In this case 655 = 0.01 * 2^16
 #define BAT_CALIB_REAL_VOLTAGE  3970      // input voltage measured by multimeter (multiplied by 100). In this case 43.00 V * 100 = 4300
 #define BAT_CALIB_ADC           1492      // adc-value measured by mainboard (value nr 5 on UART debug output)
-#define BAT_CELLS               6       // battery number of cells. Normal Hoverboard battery: 10s = 36V nominal, 42V full charge. For 36V battery use 10, for 24V use 6, for 48V use 13 etc.
+#define BAT_CELLS               10       // battery number of cells. Normal Hoverboard battery: 10s = 36V nominal, 42V full charge. For 36V battery use 10, for 24V use 6, for 48V use 13 etc.
 #define BAT_LVL2_ENABLE         0         // to beep or not to beep, 1 or 0
 #define BAT_LVL1_ENABLE         0         // to beep or not to beep, 1 or 0
 #define BAT_DEAD_ENABLE         1         // to poweroff or not to poweroff, 1 or 0
@@ -666,9 +666,9 @@
 /* ###### CONTROL VIA ENCODER ######
  * This variant is for using encoder for motor control.
 */
-//#define GD32F103Rx              1   // define if you are using a GD32F103Rx MCU to set system clock to 108MHz  
+#define GD32F103Rx              1   // define if you are using a GD32F103Rx MCU to set system clock to 108MHz  
 #define HOCP                        // Tie PA6/PB12 hardware over-current signals into TIM1/TIM8 break inputs
-//#define BEEPER_OFF                  //use led as beeper
+#define BEEPER_OFF                  //use led as beeper
 #define ENCODER_X                   //enable X encoder to right motor
 //#define ENCODER_Y                 //enable Y encoder to left motor
 #define INTBRK_L_EN                 //enable brake resistor control on PHASE A left side driver, do not disable if break reistor is connected 
@@ -680,14 +680,14 @@
 
 #if defined (INTBRK_L_EN) || defined (EXTBRK_EN)
 
-  #define BRAKE_RESISTANCE 300                // [Ohm]3ohm X100 Value of the braking resistor. Set it to your own brake resistor resistance, increase the resistance here a bit for example I use 2.2ohm but I set to 3ohm here to be safe. 
+  #define BRAKE_RESISTANCE 700                // [Ohm]3ohm X100 Value of the braking resistor. Set it to your own brake resistor resistance, increase the resistance here a bit for example I use 2.2ohm but I set to 3ohm here to be safe. 
   #define BRKRESACT_SENS    40 / 20           //[A]40mA  Brake resistor activation sensitivity. Set same as MAX_REGEN_CURRENT if using battery. If using psu set 40mA-60mA. 
   #define MAX_REGEN_CURRENT 0 / 20            // [A]0mA  Maximum regenerative current that can be dissipated in the PSU or BATTERY. Set in 20mA steps 0, 20, 40, 60, 80, 100 etc. Set 0 for PSU!
 
 #endif  
 
 #if defined ENCODER_X
-#define ENCODER_X_PPR              2048     // Pulses per revolution
+#define ENCODER_X_PPR              1200     // Pulses per revolution
 #define ALIGNMENT_X_POWER        6553      // [-] Voltage used for sensor alignment. [-16000, 16000]
 #endif
 #if defined ENCODER_Y
@@ -712,7 +712,7 @@
 // Limitation settings
 #undef N_MOT_MAX 
 #undef I_MOT_MAX 
-#define I_MOT_MAX                15              // [A] Maximum single motor current limit
+#define I_MOT_MAX                8              // [A] Maximum single motor current limit
 #define I_DC_MAX                 17              // [A] Maximum stage2 DC Link current limit (Above this value, current chopping is applied. To avoid this make sure that I_DC_MAX = I_MOT_MAX + 2A)
 #undef N_MOT_MAX
 #define N_MOT_MAX                2000            // [rpm] Maximum motor speed limit
@@ -721,7 +721,7 @@
 #undef FIELD_WEAK_ENA
 #define FIELD_WEAK_ENA           0 
 //#define RC_PWM_RIGHT           0         // Use RC PWM as input on the RIGHT cable. (duty cycle mapped to 0 to -1000, 0, 1000) Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART3!
-#define HW_PWM                   0         // Use hw pwm pin PB5 on left side L_MTR_HALL_PHA  or could also be L_MTR_HALL_PHC 
+#define HW_PWM                   1         // Use hw pwm pin PB5 on left side L_MTR_HALL_PHA  or could also be L_MTR_HALL_PHC 
 //#define CONTROL_ADC            1         // use ADC as input pn pins PA2 and PA3, cant be used with extbrk on PA2/PA3  
 //#define SW_PWM_RIGHT           0         // Use PWM input capture on PB10 and PB11 (duty cycle mapped to 0 to -16000, 0, 16000)
 //#define SW_PWM_LEFT            0         // Use PWM input capture on PA2 and PA3 (duty cycle mapped to 0 to -16000, 0, 16000)   (cant be use with extbrk on PA2/PA3)
