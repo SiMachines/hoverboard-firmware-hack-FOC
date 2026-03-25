@@ -306,7 +306,7 @@
 // #define DEBUG_SERIAL_PROTOCOL        // uncomment this to send user commands to the board, change parameters and print specific signals (see comms.c for the user commands)
  #define PERF_MONITOR                 // enable DWT cycle counters + overrun stats (visible via DEBUG_SERIAL_PROTOCOL watch list)
  #define PERF_ISR_SCOPE               // drive LED pin high/low around BLDC DMA ISR for oscilloscope timing
- #define HW_PWM_USE_HAL_IRQ           // use HAL_TIM_IRQHandler path for TIM3 capture instead of direct register ISR
+ //#define HW_PWM_USE_HAL_IRQ           // use HAL_TIM_IRQHandler path for TIM3 capture instead of direct register ISR
  #define HW_PWM_MEASURE_CYCLES        // measure TIM3 IRQ cycles (requires PERF_MONITOR)
 // ########################### END OF DEBUG SERIAL ############################
 

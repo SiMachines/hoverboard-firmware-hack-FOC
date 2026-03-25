@@ -419,7 +419,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 
  
 void calc_hw_pwm(void){
-  uint32_t prev = basepri_set_threshold(1);
+  uint32_t prev = basepri_set_threshold(2);
   // Read capture registers directly from TIM3 handle (no IRQ required) //
   //period_ticks = HAL_TIM_ReadCapturedValue(&TimHandle_PWM, TIM_CHANNEL_2);
   //duty_ticks = HAL_TIM_ReadCapturedValue(&TimHandle_PWM, TIM_CHANNEL_1);
