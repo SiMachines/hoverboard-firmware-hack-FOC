@@ -66,6 +66,14 @@ extern int16_t right_dc_curr;
 extern int16_t dc_curr;
 extern int16_t cmdL; 
 extern int16_t cmdR; 
+#if defined(PERF_MONITOR)
+extern volatile uint32_t perf_bldc_cycles_last;
+extern volatile uint32_t perf_bldc_cycles_max;
+extern volatile uint32_t perf_bldc_overrun_count;
+extern volatile uint8_t perf_bldc_overrun_latched;
+extern volatile uint32_t perf_main_cycles_last;
+extern volatile uint32_t perf_main_cycles_max;
+#endif
 
 
 
@@ -142,6 +150,14 @@ const parameter_entry params[] = {
     {VARIABLE   ,"STR_COEF"           ,0       , NULL                        ,NULL                      ,0          ,STEER_COEFFICIENT ,0      ,0      ,0      ,0               ,10   ,14    ,NULL               ,"Steer Coefficient *10"},
     {VARIABLE   ,"BATV"               ,ADD_PARAM(batVoltageCalib)            ,NULL                      ,0          ,0                 ,0      ,0      ,0      ,0               ,0    ,0     ,NULL               ,"Calibrated Battery voltage *100"},       
     {VARIABLE   ,"TEMP"               ,ADD_PARAM(board_temp_deg_c)           ,NULL                      ,0          ,0                 ,0      ,0      ,0      ,0               ,0    ,0     ,NULL               ,"Calibrated Temperature °C *10"},       
+  #if defined(PERF_MONITOR)
+    {VARIABLE   ,"PERF_BLDCLAST"       ,ADD_PARAM(perf_bldc_cycles_last)      ,NULL                      ,0          ,0                 ,0      ,0      ,0      ,0               ,0    ,0     ,NULL               ,"BLDC ISR cycles last"},
+    {VARIABLE   ,"PERF_BLDCCMAX"       ,ADD_PARAM(perf_bldc_cycles_max)       ,NULL                      ,0          ,0                 ,0      ,0      ,0      ,0               ,0    ,0     ,NULL               ,"BLDC ISR cycles max"},
+    {VARIABLE   ,"PERF_MAINLAST"       ,ADD_PARAM(perf_main_cycles_last)      ,NULL                      ,0          ,0                 ,0      ,0      ,0      ,0               ,0    ,0     ,NULL               ,"Main loop cycles last"},
+    {VARIABLE   ,"PERF_MAINCMAX"       ,ADD_PARAM(perf_main_cycles_max)       ,NULL                      ,0          ,0                 ,0      ,0      ,0      ,0               ,0    ,0     ,NULL               ,"Main loop cycles max"},
+    {VARIABLE   ,"PERF_OVR"            ,ADD_PARAM(perf_bldc_overrun_count)    ,NULL                      ,0          ,0                 ,0      ,0      ,0      ,0               ,0    ,0     ,NULL               ,"BLDC ISR overrun count"},
+    {VARIABLE   ,"PERF_OVRFLT"         ,ADD_PARAM(perf_bldc_overrun_latched)  ,NULL                      ,0          ,0                 ,0      ,0      ,0      ,0               ,0    ,0     ,NULL               ,"BLDC ISR overrun latched"},
+  #endif
 
 };
 

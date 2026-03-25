@@ -40,6 +40,9 @@ int main(void);
 
 void SystemClock_Config(void);
 void verifyClocks(void);
+#if defined(PERF_MONITOR) || defined(HW_PWM_MEASURE_CYCLES)
+static void Perf_InitCycleCounter(void);
+#endif
 
 typedef struct {  // Structure for clock diagnostics
   uint32_t sysclk_hz;
@@ -146,6 +149,10 @@ extern  int16_t pwm_captured_ch2_value;
 uint8_t backwardDrive;
 extern volatile uint32_t buzzerTimer;
 volatile uint32_t main_loop_counter;
+#if defined(PERF_MONITOR)
+volatile uint32_t perf_main_cycles_last = 0;
+volatile uint32_t perf_main_cycles_max = 0;
+#endif
 int16_t batVoltageCalib;         // global variable for calibrated battery voltage
 int16_t board_temp_deg_c;        // global variable for calibrated temperature in degrees Celsius
 int16_t left_dc_curr;            // global variable for Left DC Link current 
@@ -234,6 +241,9 @@ int main(void) {
 
   SystemClock_Config();
   verifyClocks();
+#if defined(PERF_MONITOR) || defined(HW_PWM_MEASURE_CYCLES)
+  Perf_InitCycleCounter();
+#endif
   
 
   __HAL_RCC_DMA1_CLK_DISABLE();
@@ -336,6 +346,9 @@ int main(void) {
     #endif
 
     if (buzzerTimer - buzzerTimer_prev > 16*DELAY_IN_MAIN_LOOP) {   // 1 ms = 16 ticks buzzerTimer
+  #if defined(PERF_MONITOR)
+      uint32_t perf_main_start = DWT->CYCCNT;
+  #endif
     estop_update();                       // E-stop update
     readCommand();                        // Read Command: input1[inIdx].cmd, input2[inIdx].cmd
     calcAvgSpeed();                       // Calculate average measured speed: speedAvg, speedAvgAbs
@@ -745,10 +758,27 @@ int main(void) {
     // Update states
     inIdx_prev = inIdx;
     buzzerTimer_prev = buzzerTimer;
+    #if defined(PERF_MONITOR)
+      {
+        uint32_t perf_cycles = DWT->CYCCNT - perf_main_start;
+        perf_main_cycles_last = perf_cycles;
+        if (perf_cycles > perf_main_cycles_max) {
+          perf_main_cycles_max = perf_cycles;
+        }
+      }
+    #endif
     main_loop_counter++;
     }
   }
 }
+
+#if defined(PERF_MONITOR) || defined(HW_PWM_MEASURE_CYCLES)
+static void Perf_InitCycleCounter(void) {
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  DWT->CYCCNT = 0u;
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+#endif
 
 // ===========================================================
 /** System Clock Configuration

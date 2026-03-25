@@ -393,13 +393,17 @@ void PWM_Init(void) {
 
 #if defined(HW_PWM)
 TIM_HandleTypeDef TimHandle_PWM;
-uint32_t period_ticks = 0;
-uint32_t duty_ticks = 0;
+volatile uint32_t period_ticks = 0;
+volatile uint32_t duty_ticks = 0;
 uint32_t duty_scaled = 0;
 int16_t pwm_captured_ch1_value = 0;
 int16_t pwm_captured_ch2_value = 0;
 uint32_t pwm_timeout_ch1 = 0;
 uint32_t pwm_timeout_ch2 = 0;
+#if defined(HW_PWM_MEASURE_CYCLES)
+volatile uint32_t perf_tim3_cycles_last = 0;
+volatile uint32_t perf_tim3_cycles_max = 0;
+#endif
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
   if (htim->Instance != TIM3) {

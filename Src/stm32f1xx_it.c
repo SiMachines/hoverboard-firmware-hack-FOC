@@ -421,10 +421,42 @@ void ADC3_IRQHandler(void)
 /**
   * @brief This function handles TIM3 global interrupt for HW PWM capture.
   */
-void TIM3_IRQHandler(void)
+void __attribute__((section(".ramfunc"), noinline)) TIM3_IRQHandler(void)
 {
-  extern TIM_HandleTypeDef TimHandle_PWM;
-  HAL_TIM_IRQHandler(&TimHandle_PWM);
+  #if defined(HW_PWM_MEASURE_CYCLES)
+  uint32_t perf_start = DWT->CYCCNT;
+  #endif
+
+  #if defined(HW_PWM_USE_HAL_IRQ)
+  {
+    extern TIM_HandleTypeDef TimHandle_PWM;
+    HAL_TIM_IRQHandler(&TimHandle_PWM);
+  }
+  #else
+  if ((TIM3->SR & TIM_SR_CC2IF) != 0u) {
+    extern volatile uint32_t period_ticks;
+    extern volatile uint32_t duty_ticks;
+    extern volatile boolean_T hw_pwm_ready;
+
+    period_ticks = TIM3->CCR2;
+    duty_ticks = TIM3->CCR1;
+    hw_pwm_ready = 1;
+  }
+
+  TIM3->SR &= ~(TIM_SR_CC1IF | TIM_SR_CC2IF);
+  #endif
+
+  #if defined(HW_PWM_MEASURE_CYCLES)
+  {
+    extern volatile uint32_t perf_tim3_cycles_last;
+    extern volatile uint32_t perf_tim3_cycles_max;
+    uint32_t perf_cycles = DWT->CYCCNT - perf_start;
+    perf_tim3_cycles_last = perf_cycles;
+    if (perf_cycles > perf_tim3_cycles_max) {
+      perf_tim3_cycles_max = perf_cycles;
+    }
+  }
+  #endif
 }
 #endif
 

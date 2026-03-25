@@ -64,6 +64,13 @@ volatile int pwml = 0;
 volatile int pwmr = 0;
 extern volatile adc_buf_t adc_buffer;
 
+#if defined(PERF_MONITOR)
+volatile uint32_t perf_bldc_cycles_last = 0;
+volatile uint32_t perf_bldc_cycles_max = 0;
+volatile uint32_t perf_bldc_overrun_count = 0;
+volatile uint8_t perf_bldc_overrun_latched = 0;
+#endif
+
 uint8_t buzzerFreq          = 0;
 uint8_t buzzerPattern       = 0;
 uint8_t buzzerCount         = 0;
@@ -114,6 +121,14 @@ uint8_t BLDC_CurrentOffsetCalDone(void) {
 // =================================
 void DMA1_Channel1_IRQHandler(void) {
 
+#if defined(PERF_ISR_SCOPE)
+  LED_PORT->BSRR = (uint32_t)LED_PIN;
+#endif
+
+#if defined(PERF_MONITOR)
+  uint32_t perf_start = DWT->CYCCNT;
+#endif
+
   DMA1->IFCR = DMA_IFCR_CTCIF1;
   // HAL_GPIO_WritePin(LED_PORT, LED_PIN, 1);
   // HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
@@ -155,6 +170,9 @@ void DMA1_Channel1_IRQHandler(void) {
     offsetrrC = (adc_buffer.adc12.value.rrC + offsetrrC) / 2;
     offsetdcl = (adc_buffer.adc12.value.dcl + offsetdcl) / 2;
     offsetdcr = (adc_buffer.adc12.value.dcr + offsetdcr) / 2;
+  #endif
+  #if defined(PERF_ISR_SCOPE)
+    LED_PORT->BSRR = (uint32_t)LED_PIN << 16;
   #endif
     return;
   }else if(offsetcount == CURRENT_SENSE_OFFSET_CAL_SAMPLES) {
@@ -247,6 +265,13 @@ void DMA1_Channel1_IRQHandler(void) {
 
   /* Check for overrun */
   if (OverrunFlag) {
+#if defined(PERF_MONITOR)
+    perf_bldc_overrun_count++;
+    perf_bldc_overrun_latched = 1U;
+#endif
+#if defined(PERF_ISR_SCOPE)
+    LED_PORT->BSRR = (uint32_t)LED_PIN << 16;
+#endif
     return;
   }
   OverrunFlag = true;
@@ -471,6 +496,18 @@ void DMA1_Channel1_IRQHandler(void) {
   }
   #endif
   /* Indicate task complete */
+#if defined(PERF_MONITOR)
+  {
+    uint32_t perf_cycles = DWT->CYCCNT - perf_start;
+    perf_bldc_cycles_last = perf_cycles;
+    if (perf_cycles > perf_bldc_cycles_max) {
+      perf_bldc_cycles_max = perf_cycles;
+    }
+  }
+#endif
+#if defined(PERF_ISR_SCOPE)
+  LED_PORT->BSRR = (uint32_t)LED_PIN << 16;
+#endif
   OverrunFlag = false;
  
  // ###############################################################################
