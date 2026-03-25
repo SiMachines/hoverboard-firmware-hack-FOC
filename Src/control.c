@@ -40,7 +40,6 @@ void PPM_ISR_Callback(void) {
   
 }
 void calc_ppm(void){
-  uint32_t prev = basepri_set_threshold(1);
   ppm_ready = 0;
 if (rc_delay > 3000) {
     if (ppm_valid && ppm_count == PPM_NUM_CHANNELS) {
@@ -57,7 +56,6 @@ if (rc_delay > 3000) {
   } else {
     ppm_valid = false;
   }
-  basepri_restore(prev);
 }
 // SysTick executes once each ms
 void PPM_SysTick_Callback(void) {
@@ -125,9 +123,12 @@ uint16_t rc_signal_ch1 = 0;
 uint16_t rc_signal_ch2 = 0;
 
 void PWM_ISR_CH1_Callback(void) {
+  if (rc_pwm_ready_ch1 != 0u) {
+    return;
+  }
   // Dummy loop with 16 bit count wrap around
-  if(HAL_GPIO_ReadPin(PWM_PORT_CH1, PWM_PIN_CH1)) {   // Rising  Edge interrupt -> save timer value OR reset timer
-    if (HAL_GPIO_ReadPin(PWM_PORT_CH2, PWM_PIN_CH2)) {
+  if (PWM_PORT_CH1->IDR & PWM_PIN_CH1) {   // Rising  Edge interrupt -> save timer value OR reset timer
+    if (PWM_PORT_CH2->IDR & PWM_PIN_CH2) {
       pwm_CNT_prev_ch1 = TIM2->CNT;
     } else {
       TIM2->CNT = 0;
@@ -140,8 +141,6 @@ void PWM_ISR_CH1_Callback(void) {
   }
 
 void calc_rc_pwm_ch1(void){
-  uint32_t prev = basepri_set_threshold(1);
-  rc_pwm_ready_ch1=0;
   if (IN_RANGE(rc_signal_ch1, 900, 2100)){
       timeoutCntGen = 0;
       timeoutFlgGen = 0;
@@ -151,13 +150,16 @@ void calc_rc_pwm_ch1(void){
         pwm_captured_ch1_value = (int16_t)(scaled / 1000u) - 32767;
       }
   }
-  basepri_restore(prev);
+  rc_pwm_ready_ch1 = 0;
 }
 
 void PWM_ISR_CH2_Callback(void) {
+  if (rc_pwm_ready_ch2 != 0u) {
+    return;
+  }
   // Dummy loop with 16 bit count wrap around
-  if(HAL_GPIO_ReadPin(PWM_PORT_CH2, PWM_PIN_CH2)) {   // Rising  Edge interrupt -> save timer value OR reset timer
-    if (HAL_GPIO_ReadPin(PWM_PORT_CH1, PWM_PIN_CH1)) {
+  if (PWM_PORT_CH2->IDR & PWM_PIN_CH2) {   // Rising  Edge interrupt -> save timer value OR reset timer
+    if (PWM_PORT_CH1->IDR & PWM_PIN_CH1) {
       pwm_CNT_prev_ch2 = TIM2->CNT;
     } else {
       TIM2->CNT = 0;
@@ -170,8 +172,6 @@ void PWM_ISR_CH2_Callback(void) {
 }
 
 void calc_rc_pwm_ch2(void){
-  uint32_t prev = basepri_set_threshold(1);
-  rc_pwm_ready_ch2=0;
   if (IN_RANGE(rc_signal_ch2, 900, 2100)){
       timeoutCntGen = 0;
       timeoutFlgGen = 0;
@@ -181,7 +181,7 @@ void calc_rc_pwm_ch2(void){
         pwm_captured_ch2_value = (int16_t)(scaled / 1000u) - 32767;
       }
     }
-    basepri_restore(prev);
+  rc_pwm_ready_ch2 = 0;
 }
 // SysTick executes once each ms
 void PWM_SysTick_Callback(void) {
@@ -265,7 +265,10 @@ uint16_t current_cnt_ch1 = 0;
 uint16_t current_cnt_ch2 = 0;
 
 void PWM_ISR_CH1_Callback(void) {
-  if(HAL_GPIO_ReadPin(PWM_PORT_CH1, PWM_PIN_CH1)) {   // Rising Edge interrupt
+  if (sw_pwm_ready_ch1 != 0u) {
+    return;
+  }
+  if (PWM_PORT_CH1->IDR & PWM_PIN_CH1) {   // Rising Edge interrupt
     // Save rising edge time for period calculation
      current_cnt_ch1 = TIM2->CNT;
     pwm_period_ch1 = current_cnt_ch1 - pwm_CNT_prev_ch1;
@@ -279,8 +282,6 @@ void PWM_ISR_CH1_Callback(void) {
   }
 }
 void calc_sw_pwm_ch1(void){
-  uint32_t prev = basepri_set_threshold(1);
-  sw_pwm_ready_ch1=0;
 if (pwm_period_ch1 > 1 && pwm_period_ch1 < 50000u && duty_ticks_ch1 <= pwm_period_ch1) {
       // Fixed: proper calculation with parentheses for order of operations  
        duty_cycle_pct_ch1 = (duty_ticks_ch1 * 65534u) / pwm_period_ch1;
@@ -293,12 +294,15 @@ if (pwm_period_ch1 > 1 && pwm_period_ch1 < 50000u && duty_ticks_ch1 <= pwm_perio
         pwm_timeout_ch1 = 0;
       }
     }
-    basepri_restore(prev);
+    sw_pwm_ready_ch1 = 0;
 }
 
 void PWM_ISR_CH2_Callback(void) {
   // Dummy loop with 16 bit count wrap around
-  if(HAL_GPIO_ReadPin(PWM_PORT_CH2, PWM_PIN_CH2)) {   // Rising  Edge interrupt -> save timer value OR reset timer
+  if (sw_pwm_ready_ch2 != 0u) {
+    return;
+  }
+  if (PWM_PORT_CH2->IDR & PWM_PIN_CH2) {   // Rising  Edge interrupt -> save timer value OR reset timer
     uint16_t current_cnt_ch2 = TIM2->CNT;
     pwm_period_ch2 = current_cnt_ch2 - pwm_CNT_prev_ch2;
     // Update previous rising edge time for next period calculation
@@ -312,8 +316,6 @@ void PWM_ISR_CH2_Callback(void) {
   }
 }
 void calc_sw_pwm_ch2(void){
-  uint32_t prev = basepri_set_threshold(1);
-  sw_pwm_ready_ch2=0;
   if (pwm_period_ch2 > 1 && pwm_period_ch2 < 50000u && duty_ticks_ch2 <= pwm_period_ch2) {
       // Calculate duty cycle percentage
      duty_cycle_pct_ch2 = (duty_ticks_ch2 * 65534u) / pwm_period_ch2;
@@ -326,7 +328,7 @@ void calc_sw_pwm_ch2(void){
         pwm_timeout_ch2 = 0;
       }
     }
-    basepri_restore(prev);
+    sw_pwm_ready_ch2 = 0;
 }
 // SysTick executes once each ms
 void PWM_SysTick_Callback(void) {
@@ -405,8 +407,13 @@ volatile uint32_t perf_tim3_cycles_last = 0;
 volatile uint32_t perf_tim3_cycles_max = 0;
 #endif
 
+#if defined(HW_PWM_USE_HAL_IRQ)
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
   if (htim->Instance != TIM3) {
+    return;
+  }
+
+  if (hw_pwm_ready != 0u) {
     return;
   }
 
@@ -416,14 +423,13 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
      hw_pwm_ready = 1;
   }
 }
+#endif
 
  
 void calc_hw_pwm(void){
-  uint32_t prev = basepri_set_threshold(2);
   // Read capture registers directly from TIM3 handle (no IRQ required) //
   //period_ticks = HAL_TIM_ReadCapturedValue(&TimHandle_PWM, TIM_CHANNEL_2);
   //duty_ticks = HAL_TIM_ReadCapturedValue(&TimHandle_PWM, TIM_CHANNEL_1);
-  hw_pwm_ready = 0;
   if (period_ticks > 0u) {
       if (duty_ticks > period_ticks) {
         duty_ticks = period_ticks;
@@ -442,7 +448,7 @@ void calc_hw_pwm(void){
         //pwm_timeout_ch2 = 0;
         //pwm_timeout_ch1 = 0;
     }
-    basepri_restore(prev);
+  hw_pwm_ready = 0;
 }
 
 /*

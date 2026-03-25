@@ -235,15 +235,17 @@ void DMA1_Channel5_IRQHandler(void)
 }
 #endif
 
+#define EXTI_IRQ_ATTR __attribute__((section(".ramfunc"), noinline))
+
 #ifdef CONTROL_PPM_LEFT
-void EXTI3_IRQHandler(void)
+void EXTI_IRQ_ATTR EXTI3_IRQHandler(void)
 {
   __HAL_GPIO_EXTI_CLEAR_IT(PPM_PIN);
   PPM_ISR_Callback();    
 }
 #endif
 #ifdef CONTROL_PPM_RIGHT
-void EXTI15_10_IRQHandler(void)
+void EXTI_IRQ_ATTR EXTI15_10_IRQHandler(void)
 {
   if(__HAL_GPIO_EXTI_GET_IT(PPM_PIN) != RESET) {
     __HAL_GPIO_EXTI_CLEAR_IT(PPM_PIN);
@@ -253,20 +255,20 @@ void EXTI15_10_IRQHandler(void)
 #endif
 
 #ifdef RC_PWM_LEFT
-void EXTI2_IRQHandler(void)
+void EXTI_IRQ_ATTR EXTI2_IRQHandler(void)
 {    
   __HAL_GPIO_EXTI_CLEAR_IT(PWM_PIN_CH1);
   PWM_ISR_CH1_Callback();
 }
 
-void EXTI3_IRQHandler(void)
+void EXTI_IRQ_ATTR EXTI3_IRQHandler(void)
 {
   __HAL_GPIO_EXTI_CLEAR_IT(PWM_PIN_CH2);
   PWM_ISR_CH2_Callback();    
 }
 #endif
 #ifdef RC_PWM_RIGHT
-void EXTI15_10_IRQHandler(void)
+void EXTI_IRQ_ATTR EXTI15_10_IRQHandler(void)
 {
   if(__HAL_GPIO_EXTI_GET_IT(PWM_PIN_CH1) != RESET) {
     __HAL_GPIO_EXTI_CLEAR_IT(PWM_PIN_CH1);
@@ -279,12 +281,12 @@ void EXTI15_10_IRQHandler(void)
 }
 #endif
 #ifdef SW_PWM_LEFT
-void EXTI2_IRQHandler(void)
+void EXTI_IRQ_ATTR EXTI2_IRQHandler(void)
 {    
   __HAL_GPIO_EXTI_CLEAR_IT(PWM_PIN_CH1);
   PWM_ISR_CH1_Callback();
 } 
-void EXTI3_IRQHandler(void)
+void EXTI_IRQ_ATTR EXTI3_IRQHandler(void)
 {
   __HAL_GPIO_EXTI_CLEAR_IT(PWM_PIN_CH2);
   PWM_ISR_CH2_Callback();    
@@ -292,7 +294,7 @@ void EXTI3_IRQHandler(void)
 #endif
 
 #ifdef SW_PWM_RIGHT
-void EXTI15_10_IRQHandler(void)
+void EXTI_IRQ_ATTR EXTI15_10_IRQHandler(void)
 {
   if(__HAL_GPIO_EXTI_GET_IT(PWM_PIN_CH1) != RESET) {
     __HAL_GPIO_EXTI_CLEAR_IT(PWM_PIN_CH1);
@@ -304,6 +306,8 @@ void EXTI15_10_IRQHandler(void)
   }
 }
 #endif
+
+#undef EXTI_IRQ_ATTR
 
 
 #if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
@@ -418,10 +422,15 @@ void ADC3_IRQHandler(void)
 
 
 #if defined(HW_PWM)
+  #if defined(HW_PWM_USE_HAL_IRQ)
+    #define TIM3_IRQ_ATTR
+  #else
+    #define TIM3_IRQ_ATTR __attribute__((section(".ramfunc"), noinline))
+  #endif
 /**
   * @brief This function handles TIM3 global interrupt for HW PWM capture.
   */
-void __attribute__((section(".ramfunc"), noinline)) TIM3_IRQHandler(void)
+void TIM3_IRQ_ATTR TIM3_IRQHandler(void)
 {
   #if defined(HW_PWM_MEASURE_CYCLES)
   uint32_t perf_start = DWT->CYCCNT;
@@ -433,7 +442,8 @@ void __attribute__((section(".ramfunc"), noinline)) TIM3_IRQHandler(void)
     HAL_TIM_IRQHandler(&TimHandle_PWM);
   }
   #else
-  if ((TIM3->SR & TIM_SR_CC2IF) != 0u) {
+  
+  if (TIM3->SR & TIM_SR_CC2IF) {
     extern volatile uint32_t period_ticks;
     extern volatile uint32_t duty_ticks;
     extern volatile boolean_T hw_pwm_ready;
@@ -458,6 +468,7 @@ void __attribute__((section(".ramfunc"), noinline)) TIM3_IRQHandler(void)
   }
   #endif
 }
+#undef TIM3_IRQ_ATTR
 #endif
 
 /* USER CODE BEGIN 1 */
