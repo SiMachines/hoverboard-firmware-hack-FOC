@@ -64,6 +64,8 @@
 #define CURRENT_SENSE_OFFSET_INIT             2048
 #define CURRENT_SENSE_OFFSET_CAL_SAMPLES      2000U
 #define CURRENT_SENSE_OFFSET_CAL_MODE_AVG
+#define CURRENT_SENSE_OFFSET_DCL_TRIM         0     // [ADC counts] Left DC-link offset trim added after calibration average
+#define CURRENT_SENSE_OFFSET_DCR_TRIM         0     // [ADC counts] Right DC-link offset trim added after calibration average
 // ########################### END OF  DO-NOT-TOUCH SETTINGS ############################
 
 // ############################### BOARD VARIANT ###############################
@@ -709,6 +711,8 @@
 #undef QI
 #undef DP
 #undef DI
+#undef CURRENT_SENSE_OFFSET_DCL_TRIM
+#undef CURRENT_SENSE_OFFSET_DCR_TRIM
 ////////////////////////////////////////
 //#define ESTOP_REQUIRE_HOLD           // Require the button to stay pressed for the estop to remain active
 #define ESTOP_ENABLE                //ESTOP functionality enabled
@@ -780,6 +784,8 @@
 #define MOTOR_RIGHT_ENA                 //  Enable RIGHT motor. Comment-out if this motor is not needed to be operational                        
 #define DIAG_ENA                 0               // [-] disable diag if using motor at stall
 #define INACTIVITY_TIMEOUT       100            // [s] Time of inactivity after which hoverboard shuts off
+#define CURRENT_SENSE_OFFSET_DCL_TRIM  0        // [ADC counts] ONE_AXIS left DC-link offset trim
+#define CURRENT_SENSE_OFFSET_DCR_TRIM  0        // [ADC counts] ONE_AXIS right DC-link offset trim
 // Limitation settings
 #define I_MOT_MAX                10              // [A] Maximum single motor current limit
 #define I_DC_MAX                 13              // [A] Maximum stage2 DC Link current limit (Above this value, current chopping is applied. To avoid this make sure that I_DC_MAX = I_MOT_MAX + 2A)

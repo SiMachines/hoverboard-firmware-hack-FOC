@@ -159,8 +159,8 @@ void DMA1_Channel1_IRQHandler(void) {
       offsetrlB = (int16_t)(offsetSumRlB / (int32_t)CURRENT_SENSE_OFFSET_CAL_SAMPLES);
       offsetrrB = (int16_t)(offsetSumRrB / (int32_t)CURRENT_SENSE_OFFSET_CAL_SAMPLES);
       offsetrrC = (int16_t)(offsetSumRrC / (int32_t)CURRENT_SENSE_OFFSET_CAL_SAMPLES);
-      offsetdcl = (int16_t)(offsetSumDcl / (int32_t)CURRENT_SENSE_OFFSET_CAL_SAMPLES) + 2;
-      offsetdcr = (int16_t)(offsetSumDcr / (int32_t)CURRENT_SENSE_OFFSET_CAL_SAMPLES) + 2;
+      offsetdcl = (int16_t)(offsetSumDcl / (int32_t)CURRENT_SENSE_OFFSET_CAL_SAMPLES) + CURRENT_SENSE_OFFSET_DCL_TRIM;
+      offsetdcr = (int16_t)(offsetSumDcr / (int32_t)CURRENT_SENSE_OFFSET_CAL_SAMPLES) + CURRENT_SENSE_OFFSET_DCR_TRIM;
     }
   #else
     offsetcount++;
