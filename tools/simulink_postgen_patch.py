@@ -61,16 +61,16 @@ def _patch_header(text: str) -> tuple[str, list[str]]:
     # Ensure generated header can resolve mcu_model regardless of include order.
     guarded_include = f"#ifndef mcu_model{newline}#include \"config.h\"{newline}#endif"
     if guarded_include not in text:
+        # Locate the include block. New-style "portable word sizes" codegen
+        # emits <stdbool.h>/<stdint.h>; older codegen emitted "rtwtypes.h".
         include_block_re = re.compile(
-            r"(#ifndef\s+BLDC_controller_COMMON_INCLUDES_\s*\r?\n"
-            r"#define\s+BLDC_controller_COMMON_INCLUDES_\s*\r?\n"
-            r"#include\s+\"rtwtypes\.h\"\s*\r?\n)",
+            r"(?:#include\s+<stdint\.h>\s*\r?\n|#include\s+\"rtwtypes\.h\"\s*\r?\n)",
             flags=re.MULTILINE,
         )
         m_inc = include_block_re.search(text)
         if not m_inc:
-            raise RuntimeError("Could not find BLDC_controller_COMMON_INCLUDES_ block in BLDC_controller.h")
-        text = text[: m_inc.end(1)] + guarded_include + newline + text[m_inc.end(1) :]
+            raise RuntimeError("Could not find the include block in BLDC_controller.h")
+        text = text[: m_inc.end()] + guarded_include + newline + text[m_inc.end() :]
         details.append("added guarded include for config.h (mcu_model)")
 
     # Ensure RT_MODEL has defaultParam pointer
@@ -205,12 +205,12 @@ def _patch_generated_rtP_plumbing(text: str) -> tuple[str, list[str]]:
         ),
         (
             "updated FOC() prototype to accept rtP",
-            r"(extern\s+void\s+FOC\([\s\S]*?rtu_b_cruiseCtrlEna,\s*)(?:const\s+P\s*\*\s*rtP,\s*)?(int16_T\s*\*rty_Vq,\s*int16_T\s*\*rty_Vd,\s*DW_FOC[\s\S]*?localDW\);)",
+            r"(extern\s+void\s+FOC\([\s\S]*?rtu_b_cruiseCtrlEna,\s*)(?:const\s+P\s*\*\s*rtP,\s*)?(int16_t\s*\*rty_Vq,\s*int16_t\s*\*rty_Vd,\s*DW_FOC[\s\S]*?localDW\);)",
             r"\1const P *rtP, \2",
         ),
         (
             "updated FOC() definition to accept rtP",
-            r"(void\s+FOC\([\s\S]*?rtu_b_cruiseCtrlEna,\s*)(?:const\s+P\s*\*\s*rtP,\s*)?(int16_T\s*\*rty_Vq,\s*int16_T\s*\*rty_Vd,[\s\S]*?DW_FOC\s*\*localDW\)\s*\{)",
+            r"(void\s+FOC\([\s\S]*?rtu_b_cruiseCtrlEna,\s*)(?:const\s+P\s*\*\s*rtP,\s*)?(int16_t\s*\*rty_Vq,\s*int16_t\s*\*rty_Vd,[\s\S]*?DW_FOC\s*\*localDW\)\s*\{)",
             r"\1const P *rtP, \2",
         ),
     ]
@@ -222,7 +222,7 @@ def _patch_generated_rtP_plumbing(text: str) -> tuple[str, list[str]]:
             details.append(detail)
 
     new_text, count = re.subn(
-        r"(rtu_b_cruiseCtrlEna,\s*)(?:const\s+P\s*\*\s*rtP,\s*)?(int16_T\s*\*rty_Vq,\s*int16_T\s*\*rty_Vd,\s*DW_FOC\s*\*localDW)",
+        r"(rtu_b_cruiseCtrlEna,\s*)(?:const\s+P\s*\*\s*rtP,\s*)?(int16_t\s*\*rty_Vq,\s*int16_t\s*\*rty_Vd,\s*DW_FOC\s*\*localDW)",
         r"\1const P *rtP, \2",
         text,
         flags=re.MULTILINE,
@@ -234,7 +234,7 @@ def _patch_generated_rtP_plumbing(text: str) -> tuple[str, list[str]]:
     call_patterns: list[tuple[str, str, str]] = [
         (
             "updated F03_Control_Mode_Manager() call site(s) to forward rtP",
-            r"(&(?:rtb|rtDW->)Saturation,\s*)(?:rtP,\s*)?(&rtDW->F03_Control_Mode_Manager_f\))",
+            r"(&rtDW->Saturation1,\s*)(?:rtP,\s*)?(&rtDW->F03_Control_Mode_Manager_f\))",
             r"\1rtP, \2",
         ),
         (
@@ -249,10 +249,23 @@ def _patch_generated_rtP_plumbing(text: str) -> tuple[str, list[str]]:
         ),
         (
             "updated FOC() call site(s) to forward rtP",
-            r"(rtDW->UnitDelay4_DSTATE_a,\s*rtP->b_cruiseCtrlEna,\s*)(?:rtP,\s*)?(&rtDW->Merge,\s*&rtDW->[A-Za-z0-9_]+,\s*&rtDW->FOC_h\))",
+            r"(rtP->b_cruiseCtrlEna,\s*)(?:rtP,\s*)?(&rtDW->Merge\w*,\s*&rtDW->VariantMergeForOutportVq_Trq,\s*&rtDW->FOC_h\))",
             r"\1rtP, \2",
         ),
     ]
+
+    # Heal: earlier revisions of this patcher placed the rtP argument after
+    # rty_Vd (right before &rtDW->FOC_h). Remove it so the corrected insertion
+    # above (after rtu_b_cruiseCtrlEna) is the only one.
+    cleaned_text, n_fix = re.subn(
+        r"(&rtDW->VariantMergeForOutportVq_Trq,\s*)rtP,\s*(&rtDW->FOC_h\))",
+        r"\1\2",
+        text,
+        flags=re.MULTILINE,
+    )
+    if n_fix:
+        text = cleaned_text
+        details.append(f"removed mis-placed FOC() rtP argument(s) ({n_fix})")
 
     for detail, pattern, replacement in call_patterns:
         new_text, count = re.subn(pattern, replacement, text, flags=re.MULTILINE)
@@ -270,14 +283,14 @@ def _patch_generated_rtP_plumbing(text: str) -> tuple[str, list[str]]:
         if not _is_call_site(match.start()):
             continue
         block = match.group(0)
-        if ", rtP," not in block:
+        if re.search(r"\brtP\s*,", block) is None:
             missing_rtP_calls.append(block)
 
     for match in re.finditer(r"FOC\([\s\S]*?\);", text):
         if not _is_call_site(match.start()):
             continue
         block = match.group(0)
-        if ", rtP," not in block:
+        if re.search(r"\brtP\s*,", block) is None:
             missing_rtP_calls.append(block)
 
     if missing_rtP_calls:
@@ -319,9 +332,9 @@ def patch_file(path: Path) -> FileEdit:
         details += d
 
     elif path.name == "BLDC_controller.c":
-        text, d = _ensure_local_param_ptr(text, "BLDC_controller_initialize")
-        details += d
         text, d = _ensure_local_param_ptr(text, "BLDC_controller_step")
+        details += d
+        text, d = _ensure_local_param_ptr(text, "BLDC_controller_initialize")
         details += d
         text, d = _patch_param_access(text)
         details += d

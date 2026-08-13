@@ -519,21 +519,21 @@ void BLDC_Init(void) {
 #if !defined(SW_PWM_RIGHT) && !defined(SW_PWM_LEFT) && !defined(HW_PWM)
 void Input_Lim_Init(void) {     // Input Limitations - ! Do NOT touch !
   if (rtP_Left.b_fieldWeakEna || rtP_Right.b_fieldWeakEna) {
-    INPUT_MAX = MAX( 1000, FIELD_WEAK_HI);
-    INPUT_MIN = MIN(-1000,-FIELD_WEAK_HI);
+    INPUT_MAX = MAX( 32767, FIELD_WEAK_HI);
+    INPUT_MIN = MIN(-32767,-FIELD_WEAK_HI);
   } else {
-    INPUT_MAX =  1000;
-    INPUT_MIN = -1000;
+    INPUT_MAX =  32767;
+    INPUT_MIN = -32767;
   }
 }
 #else
 void Input_Lim_Init(void) {     // Input Limitations - ! Do NOT touch !
   if (rtP_Left.b_fieldWeakEna || rtP_Right.b_fieldWeakEna) {
-    INPUT_MAX = MAX( 16000, FIELD_WEAK_HI);
-    INPUT_MIN = MIN(-16000,-FIELD_WEAK_HI);
+    INPUT_MAX = MAX( 32767, FIELD_WEAK_HI);
+    INPUT_MIN = MIN(-32767,-FIELD_WEAK_HI);
   } else {
-    INPUT_MAX =  16000;
-    INPUT_MIN = -16000;
+    INPUT_MAX =  32767;
+    INPUT_MIN = -32767;
   }
 }
 #endif

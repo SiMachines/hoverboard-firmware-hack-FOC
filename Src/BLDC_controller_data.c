@@ -3,14 +3,12 @@
  *
  * Code generated for Simulink model 'BLDC_controller'.
  *
- * Model version                  : 16.64
+ * Model version                  : 16.99
  * Simulink Coder version         : 25.1 (R2025a) 21-Nov-2024
- * C/C++ source code generated on : Sun Mar 22 19:42:57 2026
+ * C/C++ source code generated on : Thu Aug 13 05:39:44 2026
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: ARM Compatible->ARM Cortex-M
- * Emulation hardware selection:
- *    Differs from embedded hardware (MATLAB Host)
  * Code generation objective: Execution efficiency
  * Validation result: Not run
  */
@@ -20,7 +18,7 @@
 /* Block parameters (default storage) */
 P rtP_Left = {
   /* Variable: dV_openRate
-   * Referenced by: '<S50>/dV_openRate'
+   * Referenced by: '<S53>/dV_openRate'
    */
   3932,
 
@@ -29,33 +27,37 @@ P rtP_Left = {
    */
   65537U,
 
+  /* Variable: cf_speedCoef
+   * Referenced by: '<S21>/cf_speedCoef'
+   */
+  41667U,
+
   /* Variable: t_errDequal
-   * Referenced by: '<S33>/t_errDequal'
+   * Referenced by: '<S36>/t_errDequal'
    */
   30000U,
 
   /* Variable: dz_cntTrnsDetHi
-   * Referenced by: '<S17>/dz_cntTrnsDet'
+   * Referenced by: '<S21>/dz_cntTrnsDet'
    */
   40,
 
   /* Variable: dz_cntTrnsDetLo
-   * Referenced by: '<S17>/dz_cntTrnsDet'
+   * Referenced by: '<S21>/dz_cntTrnsDet'
    */
   20,
 
   /* Variable: n_cruiseMotTgt
-   * Referenced by: '<S77>/n_cruiseMotTgt'
+   * Referenced by: '<S84>/n_cruiseMotTgt'
    */
   0,
 
   /* Variable: z_maxCntRst
    * Referenced by:
-   *   '<S13>/Counter'
    *   '<S13>/z_maxCntRst'
    *   '<S13>/z_maxCntRst2'
    *   '<S13>/UnitDelay3'
-   *   '<S17>/z_counter'
+   *   '<S21>/z_counter'
    */
   2000,
 
@@ -63,27 +65,27 @@ P rtP_Left = {
 
   /* Variable: ff_gain
    * Referenced by:
-   *   '<S78>/Input'
-   *   '<S79>/Input'
+   *   '<S85>/Input'
+   *   '<S86>/Input'
    */
-  694,
+  1388,
 
 #endif
 
   /* Variable: a_phaAdvMax
-   * Referenced by: '<S58>/a_phaAdvMax'
+   * Referenced by: '<S61>/a_phaAdvMax'
    */
   400,
 
   /* Variable: i_max
    * Referenced by:
-   *   '<S49>/i_max'
-   *   '<S216>/i_max'
+   *   '<S52>/i_max'
+   *   '<S231>/i_max'
    */
-  8000,
+  17600,
 
   /* Variable: id_fieldWeakMax
-   * Referenced by: '<S58>/id_fieldWeakMax'
+   * Referenced by: '<S61>/id_fieldWeakMax'
    */
   4000,
 
@@ -98,19 +100,19 @@ P rtP_Left = {
   480,
 
   /* Variable: n_fieldWeakAuthHi
-   * Referenced by: '<S58>/n_fieldWeakAuthHi'
+   * Referenced by: '<S61>/n_fieldWeakAuthHi'
    */
   4800,
 
   /* Variable: n_fieldWeakAuthLo
-   * Referenced by: '<S58>/n_fieldWeakAuthLo'
+   * Referenced by: '<S61>/n_fieldWeakAuthLo'
    */
   1600,
 
   /* Variable: n_max
    * Referenced by:
-   *   '<S49>/n_max'
-   *   '<S216>/n_max'
+   *   '<S52>/n_max'
+   *   '<S231>/n_max'
    */
   31200,
 
@@ -120,86 +122,81 @@ P rtP_Left = {
   48,
 
   /* Variable: r_errInpTgtThres
-   * Referenced by: '<S33>/r_errInpTgtThres'
+   * Referenced by: '<S36>/r_errInpTgtThres'
    */
   9600,
 
   /* Variable: r_fieldWeakHi
-   * Referenced by: '<S58>/r_fieldWeakHi'
+   * Referenced by: '<S61>/r_fieldWeakHi'
    */
   16000,
 
   /* Variable: r_fieldWeakLo
-   * Referenced by: '<S58>/r_fieldWeakLo'
+   * Referenced by: '<S61>/r_fieldWeakLo'
    */
   12000,
 
-  /* Variable: cf_idKp
-   * Referenced by: '<S79>/cf_idKp2'
-   */
-  349U,
-
-  /* Variable: cf_iqKp
-   * Referenced by: '<S78>/cf_iqKp1'
-   */
-  349U,
-
   /* Variable: cf_nKp
-   * Referenced by: '<S77>/cf_nKp'
+   * Referenced by: '<S84>/cf_nKp'
    */
-  4833U,
+  0U,
+
+  /* Variable: cf_idKi
+   * Referenced by: '<S86>/cf_idKi2'
+   */
+  16749U,
+
+  /* Variable: cf_iqKi
+   * Referenced by: '<S85>/cf_iqKi1'
+   */
+  16749U,
 
   /* Variable: cf_currFilt
-   * Referenced by: '<S66>/cf_currFilt'
+   * Referenced by: '<S69>/cf_currFilt'
    */
   45351U,
 
-  /* Variable: cf_idKi
-   * Referenced by: '<S79>/cf_idKi2'
-   */
-  1675U,
-
-  /* Variable: cf_iqKi
-   * Referenced by: '<S78>/cf_iqKi1'
-   */
-  1675U,
-
   /* Variable: cf_iqKiLimProt
    * Referenced by:
-   *   '<S217>/cf_iqKiLimProt'
-   *   '<S220>/cf_iqKiLimProt'
+   *   '<S235>/cf_iqKiLimProt'
+   *   '<S238>/cf_iqKiLimProt'
    */
   236U,
 
   /* Variable: cf_nKi
-   * Referenced by: '<S77>/cf_nKi'
+   * Referenced by: '<S84>/cf_nKi'
    */
-  80U,
+  59U,
 
   /* Variable: cf_nKiLimProt
    * Referenced by:
-   *   '<S218>/cf_nKiLimProt'
-   *   '<S220>/cf_nKiLimProt'
+   *   '<S236>/cf_nKiLimProt'
+   *   '<S238>/cf_nKiLimProt'
    */
   79U,
+
+  /* Variable: cf_idKp
+   * Referenced by: '<S86>/cf_idKp2'
+   */
+  3206U,
+
+  /* Variable: cf_iqKp
+   * Referenced by: '<S85>/cf_iqKp1'
+   */
+  3206U,
 
   /* Variable: a_cpr
    * Referenced by: '<S15>/Constant'
    */
   65535U,
 
-  /* Variable: cf_speedCoef
-   * Referenced by: '<S17>/cf_speedCoef'
-   */
-  11111U,
-
   /* Variable: n_polePairs
    * Referenced by: '<S15>/n_polePairs1'
    */
-  15U,
+  4U,
 
   /* Variable: t_errQual
-   * Referenced by: '<S33>/t_errQual'
+   * Referenced by: '<S36>/t_errQual'
    */
   4000U,
 
@@ -207,6 +204,8 @@ P rtP_Left = {
    * Referenced by:
    *   '<S3>/b_angleMeasEna'
    *   '<S13>/b_angleMeasEna'
+   *   '<S13>/b_angleMeasEna1'
+   *   '<S13>/b_angleMeasEna2'
    */
   true,
 
@@ -223,7 +222,7 @@ P rtP_Left = {
   /* Variable: b_fieldWeakEna
    * Referenced by:
    *   '<S6>/b_fieldWeakEna'
-   *   '<S290>/b_fieldWeakEna'
+   *   '<S308>/b_fieldWeakEna'
    */
   false,
 
@@ -233,7 +232,7 @@ P rtP_Left = {
   2U,
 
   /* Variable: z_selPhaCurMeasABC
-   * Referenced by: '<S65>/z_selPhaCurMeasABC'
+   * Referenced by: '<S68>/z_selPhaCurMeasABC'
    */
   2U
 };
@@ -241,7 +240,7 @@ P rtP_Left = {
 /* Constant parameters (default storage) */
 const ConstP rtConstP = {
   /* Computed Parameter: r_sin_M1_1_Table
-   * Referenced by: '<S68>/r_sin_M1'
+   * Referenced by: '<S71>/r_sin_M1'
    */
   { 8192, 8682, 9162, 9630, 10087, 10531, 10963, 11381, 11786, 12176, 12551,
     12911, 13255, 13583, 13894, 14189, 14466, 14726, 14968, 15191, 15396, 15582,
@@ -262,7 +261,7 @@ const ConstP rtConstP = {
     2280, 2845, 3406, 3964, 4516, 5063, 5604, 6138, 6664, 7182, 7692, 8192 },
 
   /* Computed Parameter: r_cos_M1_1_Table
-   * Referenced by: '<S68>/r_cos_M1'
+   * Referenced by: '<S71>/r_cos_M1'
    */
   { 14189, 13894, 13583, 13255, 12911, 12551, 12176, 11786, 11381, 10963, 10531,
     10087, 9630, 9162, 8682, 8192, 7692, 7182, 6664, 6138, 5604, 5063, 4516,
@@ -283,7 +282,7 @@ const ConstP rtConstP = {
     16026, 15897, 15749, 15582, 15396, 15191, 14968, 14726, 14466, 14189 },
 
   /* Computed Parameter: r_sin3PhaA_M1_Table
-   * Referenced by: '<S289>/r_sin3PhaA_M1'
+   * Referenced by: '<S307>/r_sin3PhaA_M1'
    */
   { -13091, -13634, -14126, -14565, -14953, -15289, -15577, -15816, -16009,
     -16159, -16269, -16340, -16377, -16383, -16362, -16317, -16253, -16172,
@@ -305,7 +304,7 @@ const ConstP rtConstP = {
     -9623, -10411, -11154, -11849, -12496, -13091 },
 
   /* Computed Parameter: r_sin3PhaB_M1_Table
-   * Referenced by: '<S289>/r_sin3PhaB_M1'
+   * Referenced by: '<S307>/r_sin3PhaB_M1'
    */
   { 15172, 15180, 15206, 15248, 15306, 15377, 15461, 15555, 15656, 15762, 15870,
     15977, 16079, 16172, 16253, 16317, 16362, 16383, 16377, 16340, 16269, 16159,
@@ -327,7 +326,7 @@ const ConstP rtConstP = {
     15377, 15306, 15248, 15206, 15180, 15172 },
 
   /* Computed Parameter: r_sin3PhaC_M1_Table
-   * Referenced by: '<S289>/r_sin3PhaC_M1'
+   * Referenced by: '<S307>/r_sin3PhaC_M1'
    */
   { -13091, -12496, -11849, -11154, -10411, -9623, -8791, -7921, -7014, -6075,
     -5107, -4115, -3104, -2077, -1041, 0, 1041, 2077, 3104, 4115, 5107, 6075,
@@ -351,7 +350,7 @@ const ConstP rtConstP = {
 #if mcu_model == 1
 
   /* Computed Parameter: GD32_Vq_max_M1_Table
-   * Referenced by: '<S279>/GD32_Vq_max_M1'
+   * Referenced by: '<S297>/GD32_Vq_max_M1'
    */
   { 26032, 26030, 26024, 26014, 26001, 25983, 25961, 25935, 25906, 25872, 25835,
     25793, 25747, 25697, 25644, 25586, 25524, 25457, 25387, 25312, 25233, 25150,
@@ -367,7 +366,7 @@ const ConstP rtConstP = {
 #if mcu_model == 0
 
   /* Computed Parameter: STM32_Vq_max_M1_Table
-   * Referenced by: '<S280>/STM32_Vq_max_M1'
+   * Referenced by: '<S298>/STM32_Vq_max_M1'
    */
   { 15040, 15032, 15009, 14971, 14917, 14847, 14762, 14660, 14542, 14406, 14253,
     14083, 13893, 13684, 13455, 13205, 12931, 12634, 12311, 11959, 11578, 11162,
@@ -376,7 +375,7 @@ const ConstP rtConstP = {
 #endif
 
   /* Computed Parameter: iq_maxSca_M1_Table
-   * Referenced by: '<S216>/iq_maxSca_M1'
+   * Referenced by: '<S231>/iq_maxSca_M1'
    */
   { 65535U, 65533U, 65523U, 65507U, 65484U, 65454U, 65418U, 65375U, 65326U,
     65270U, 65208U, 65139U, 65063U, 64980U, 64891U, 64795U, 64693U, 64583U,
@@ -392,7 +391,7 @@ const ConstP rtConstP = {
     9492U },
 
   /* Computed Parameter: z_commutMap_M1_table
-   * Referenced by: '<S287>/z_commutMap_M1'
+   * Referenced by: '<S305>/z_commutMap_M1'
    */
   { -1, 1, 0, -1, 0, 1, 0, -1, 1, 1, -1, 0, 1, 0, -1, 0, 1, -1 },
 
