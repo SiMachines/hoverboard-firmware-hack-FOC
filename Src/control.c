@@ -475,7 +475,17 @@ void PWM_Init(void) {
     timer_clk *= 2u;
   }
 
-  const uint32_t target_tick_hz = 10000000u;
+  /* Run TIM3 at half the APB1 timer clock for input-capture resolution.
+   * The 16-bit counter caps the measurable period at 65535/timer_clk:
+   *   - GD32 @108MHz sysclk: TIM(APB1)=108MHz -> 54MHz (max period 1.21ms, min 824Hz)
+   *   - STM32 @72MHz  sysclk: TIM(APB1)=72MHz  -> 36MHz (max period 1.82ms, min 549Hz)
+   * Halving the clock doubles the max measurable period vs prescaler=1, at the
+   * cost of half the per-tick resolution (still ~5.6 units/tick at 54MHz for a
+   * 4.58kHz input, vs ~30 at the old 10MHz). If you need to measure PWM slower
+   * than the min frequency above, lower target_tick_hz further (e.g. 10MHz
+   * supports down to ~150Hz).
+   */
+  const uint32_t target_tick_hz = timer_clk / 2u;   // half timer clock (prescaler = 2)
   uint32_t prescaler = (timer_clk + (target_tick_hz - 1u)) / target_tick_hz;
   if (prescaler == 0u) {
     prescaler = 1u;
