@@ -187,7 +187,7 @@
 #define DCR_HIGH_COUNTS  (2000 + (I_DCR_POS * A2BIT_CONV))  // compile-time right high threshold in ADC counts (nominal offset 2000)
 #define DCR_LOW_COUNTS   (2000 - (I_DCR_NEG * A2BIT_CONV))  // compile-time right low threshold in ADC counts (nominal offset 2000)
 #define N_MOT_MAX       1000             // [rpm] Maximum motor speed limit
-#define N_POLE_PAIRS    5                //[PP] Number of motor pole pairs: 15 for standard Hoverboard motors
+#define N_POLE_PAIRS    6                //[PP] Number of motor pole pairs: 15 for standard Hoverboard motors
 
 // Field Weakening / Phase Advance
 #define FIELD_WEAK_ENA  0               // [-] Field Weakening / Phase Advance enable flag: 0 = Disabled (default), 1 = Enabled
