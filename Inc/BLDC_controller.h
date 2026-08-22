@@ -3,9 +3,9 @@
  *
  * Code generated for Simulink model 'BLDC_controller'.
  *
- * Model version                  : 16.99
+ * Model version                  : 16.101
  * Simulink Coder version         : 25.1 (R2025a) 21-Nov-2024
- * C/C++ source code generated on : Thu Aug 13 05:39:44 2026
+ * C/C++ source code generated on : Sat Aug 22 16:19:28 2026
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: ARM Compatible->ARM Cortex-M
@@ -23,6 +23,8 @@
 #include "config.h"
 #endif
 #endif                                 /* BLDC_controller_COMMON_INCLUDES_ */
+
+#include <string.h>
 
 /* Model Code Variants */
 /**
@@ -299,11 +301,12 @@ typedef struct {
   DW_Debounce_Filter Debounce_Filter_e;/* '<S36>/Debounce_Filter' */
   DW_Low_Pass_Filter Low_Pass_Filter_e;/* '<S69>/Low_Pass_Filter' */
   DW_Counter Counter_c;                /* '<S13>/Counter' */
+  int64_t i;
   int32_t Divide1;                     /* '<S235>/Divide1' */
-  int32_t i;
+  int32_t sigIdx;
   int32_t i1;
-  int32_t q0;
-  int32_t q1;
+  int32_t i2;
+  int32_t i3;
   int16_t Gain4_o[3];                  /* '<S76>/Gain4' */
   int16_t DataTypeConversion[2];       /* '<S75>/Data Type Conversion' */
   int16_t TmpSignalConversionAtLow_Pa[2];
@@ -323,8 +326,6 @@ typedef struct {
   int16_t OutportBufferForr_fieldWeak;
   int16_t Divide3;                     /* '<S61>/Divide3' */
   int16_t Merge1;                      /* '<S49>/Merge1' */
-  int16_t OutportBufferForid;
-  int16_t OutportBufferForiq;
   int16_t OutportBufferForiqAbs;
   int16_t Abs5_d;                      /* '<S69>/Abs5' */
   int16_t OutportBufferForid_f;
@@ -347,13 +348,14 @@ typedef struct {
   int16_t Switch2_g;                   /* '<S14>/Switch2' */
   uint16_t UnitDelay4_DSTATE_m;        /* '<S17>/UnitDelay4' */
   uint16_t DataTypeConversion2;        /* '<S25>/Data Type Conversion2' */
+  uint16_t f;                          /* '<S71>/a_elecAngle_XA' */
+  uint16_t Divide1_m;                  /* '<S61>/Divide1' */
   int8_t UnitDelay3;                   /* '<S12>/UnitDelay3' */
   int8_t Switch2_a;                    /* '<S12>/Switch2' */
   int8_t UnitDelay2_DSTATE_o;          /* '<S12>/UnitDelay2' */
   int8_t If1_ActiveSubsystem;          /* '<S7>/If1' */
   int8_t If2_ActiveSubsystem;          /* '<S7>/If2' */
   int8_t If2_ActiveSubsystem_a;        /* '<S64>/If2' */
-  uint8_t OutportBufferForz_errCode;
   uint8_t Switch1;                     /* '<S36>/Switch1' */
   uint8_t UnitDelay3_DSTATE_f;         /* '<S10>/UnitDelay3' */
   uint8_t UnitDelay1_DSTATE;           /* '<S10>/UnitDelay1' */
@@ -472,9 +474,6 @@ struct P_ {
   uint32_t a_fcpr;                     /* Variable: a_fcpr
                                         * Referenced by: '<S15>/Constant3'
                                         */
-  uint32_t cf_speedCoef;               /* Variable: cf_speedCoef
-                                        * Referenced by: '<S21>/cf_speedCoef'
-                                        */
   uint32_t t_errDequal;                /* Variable: t_errDequal
                                         * Referenced by: '<S36>/t_errDequal'
                                         */
@@ -579,6 +578,9 @@ struct P_ {
   uint16_t a_cpr;                      /* Variable: a_cpr
                                         * Referenced by: '<S15>/Constant'
                                         */
+  uint16_t cf_speedCoef;               /* Variable: cf_speedCoef
+                                        * Referenced by: '<S21>/cf_speedCoef'
+                                        */
   uint16_t n_polePairs;                /* Variable: n_polePairs
                                         * Referenced by: '<S15>/n_polePairs1'
                                         */
@@ -620,17 +622,6 @@ struct tag_RTM {
 ExtU *inputs;
   ExtY *outputs;
   DW *dwork;
-
-  /*
-   * Timing:
-   * The following substructure contains information regarding
-   * the timing information for the model.
-   */
-  struct {
-    struct {
-      uint8_t TID[2];
-    } TaskCounters;
-  } Timing;
 };
 
 /* Block parameters (default storage) */
