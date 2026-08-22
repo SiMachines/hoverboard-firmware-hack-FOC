@@ -633,13 +633,6 @@ int main(void) {
       }
     #endif
 
-    // ####### FOC CYCLE MEASUREMENT REPORT #######
-    #if defined(FOC_CYCLE_MEASURE)
-      if (main_loop_counter % 200 == 0) {    // Report every ~1 s
-        foc_cycle_report();
-      }
-    #endif
-
     // ####### FEEDBACK SERIAL OUT #######
     #if defined(FEEDBACK_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART3)
       if (main_loop_counter % 2 == 0) {    // Send data periodically every 10 ms

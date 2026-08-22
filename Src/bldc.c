@@ -27,7 +27,6 @@
 #include "setup.h"
 #include "config.h"
 #include "util.h"
-#include <stdio.h>   /* for printf in FOC_CYCLE_MEASURE report */
 
 
 
@@ -36,10 +35,12 @@
 // FOC step cycle-counting instrumentation (DWT cycle counter, Cortex-M3)
 // ----------------------------------------------------------------------------
 // Measures the number of CPU cycles spent inside BLDC_controller_step() for
-// the Left and Right motors. Reports min/avg/max over a rolling window.
+// the Left and Right motors. Tracks min/max/sum over a rolling window.
 //
 // Enable with:  -DFOC_CYCLE_MEASURE
-// The report is printed from the main loop via foc_cycle_report().
+// Watch the foc_cyc_* variables live in the MCU viewer (no USART needed).
+//   avg = foc_cyc_sumL / foc_cyc_cnt   (per Left motor step)
+//   avg = foc_cyc_sumR / foc_cyc_cnt   (per Right motor step)
 // ============================================================================
 #ifdef FOC_CYCLE_MEASURE
 
@@ -51,13 +52,32 @@
 #define FOC_CYC_WIN_SIZE   (1u << FOC_CYC_WIN_BITS)
 #define FOC_CYC_WIN_MASK   (FOC_CYC_WIN_SIZE - 1u)
 
-static uint32_t foc_cyc_bufL[FOC_CYC_WIN_SIZE] __attribute__((unused));
-static uint32_t foc_cyc_bufR[FOC_CYC_WIN_SIZE] __attribute__((unused));
-static uint32_t foc_cyc_idx = 0;
-static uint32_t foc_cyc_minL = 0xFFFFFFFFu, foc_cyc_maxL = 0;
-static uint32_t foc_cyc_minR = 0xFFFFFFFFu, foc_cyc_maxR = 0;
-static uint64_t foc_cyc_sumL = 0, foc_cyc_sumR = 0;
-static uint32_t foc_cyc_cnt  = 0;
+// Binned histogram: bin width = 2^FOC_CYC_HIST_BITS cycles, FOC_CYC_HIST_BINS bins.
+// Covers 0 .. (FOC_CYC_HIST_BINS << FOC_CYC_HIST_BITS) - 1 cycles.
+// Bin index = elapsed >> FOC_CYC_HIST_BITS  (cheap shift, no divide).
+#define FOC_CYC_HIST_BITS   6    // 64 cycles per bin
+#define FOC_CYC_HIST_BINS   128  // covers 0..8191 cycles
+#define FOC_CYC_HIST_MASK   (FOC_CYC_HIST_BINS - 1u)
+
+// NOTE: these are GLOBAL (not static) so they are visible in the MCU viewer.
+// They are read live by address; mark unused to avoid -Wunused-variable when a
+// motor is compiled out (e.g. ONE_AXIS).
+uint32_t foc_cyc_bufL[FOC_CYC_WIN_SIZE] __attribute__((unused));
+uint32_t foc_cyc_bufR[FOC_CYC_WIN_SIZE] __attribute__((unused));
+uint32_t foc_cyc_idx = 0;
+uint32_t foc_cyc_minL __attribute__((unused)) = 0xFFFFFFFFu;
+uint32_t foc_cyc_maxL __attribute__((unused)) = 0;
+uint32_t foc_cyc_minR __attribute__((unused)) = 0xFFFFFFFFu;
+uint32_t foc_cyc_maxR __attribute__((unused)) = 0;
+uint32_t foc_cyc_sumL __attribute__((unused)) = 0;
+uint32_t foc_cyc_sumR __attribute__((unused)) = 0;
+uint32_t foc_cyc_cnt  __attribute__((unused)) = 0;
+// Precomputed rolling averages (cycles per step), updated each tick.
+uint32_t foc_cyc_avgL __attribute__((unused)) = 0;
+uint32_t foc_cyc_avgR __attribute__((unused)) = 0;
+// Binned histograms (index = cycle bin, value = count). View as bar/table/XY.
+uint32_t foc_cyc_histL[FOC_CYC_HIST_BINS] __attribute__((unused));
+uint32_t foc_cyc_histR[FOC_CYC_HIST_BINS] __attribute__((unused));
 
 // Snapshot the cycle counter at the start of the FOC step.
 static inline uint32_t foc_cyc_start(void) {
@@ -66,7 +86,8 @@ static inline uint32_t foc_cyc_start(void) {
 
 // Record the elapsed cycles for one motor step.
 static inline void foc_cyc_end(uint32_t start, uint32_t *buf,
-                               uint32_t *minv, uint32_t *maxv, uint64_t *sumv) {
+                               uint32_t *minv, uint32_t *maxv, uint32_t *sumv,
+                               uint32_t *hist) {
   uint32_t elapsed = (uint32_t)(DWT_CYCCNT - start);
   uint32_t idx = foc_cyc_idx & FOC_CYC_WIN_MASK;
   // Remove the value being overwritten from the running sum
@@ -75,23 +96,21 @@ static inline void foc_cyc_end(uint32_t start, uint32_t *buf,
   *sumv += elapsed;
   if (elapsed < *minv) *minv = elapsed;
   if (elapsed > *maxv) *maxv = elapsed;
+  // Increment histogram bin (clamp to last bin if out of range)
+  uint32_t bin = elapsed >> FOC_CYC_HIST_BITS;
+  if (bin >= FOC_CYC_HIST_BINS) bin = FOC_CYC_HIST_BINS - 1u;
+  hist[bin]++;
 }
 
 // Called once per DMA interrupt (after both motor steps) to advance the window.
 static inline void foc_cyc_tick(void) {
   foc_cyc_idx++;
   foc_cyc_cnt++;
-}
-
-// Report the measured cycles over the debug serial. Call from the main loop.
-void foc_cycle_report(void) {
-  if (foc_cyc_cnt == 0) return;
   uint32_t n = (foc_cyc_cnt < FOC_CYC_WIN_SIZE) ? foc_cyc_cnt : FOC_CYC_WIN_SIZE;
-  uint32_t avgL = (uint32_t)(foc_cyc_sumL / n);
-  uint32_t avgR = (uint32_t)(foc_cyc_sumR / n);
-  printf("FOC cycles  L[min/avg/max]=%lu/%lu/%lu  R[min/avg/max]=%lu/%lu/%lu  n=%lu\r\n",
-         foc_cyc_minL, avgL, foc_cyc_maxL,
-         foc_cyc_minR, avgR, foc_cyc_maxR, n);
+  if (n) {
+    foc_cyc_avgL = foc_cyc_sumL / n;
+    foc_cyc_avgR = foc_cyc_sumR / n;
+  }
 }
 
 #endif // FOC_CYCLE_MEASURE
@@ -364,7 +383,7 @@ void DMA1_Channel1_IRQHandler(void) {
     #endif
     BLDC_controller_step(rtM_Left);
     #ifdef FOC_CYCLE_MEASURE
-    foc_cyc_end(cycL_start, foc_cyc_bufL, &foc_cyc_minL, &foc_cyc_maxL, &foc_cyc_sumL);
+    foc_cyc_end(cycL_start, foc_cyc_bufL, &foc_cyc_minL, &foc_cyc_maxL, &foc_cyc_sumL, foc_cyc_histL);
     #endif
     #endif
 
@@ -481,7 +500,7 @@ void DMA1_Channel1_IRQHandler(void) {
     #endif
     BLDC_controller_step(rtM_Right);
     #ifdef FOC_CYCLE_MEASURE
-    foc_cyc_end(cycR_start, foc_cyc_bufR, &foc_cyc_minR, &foc_cyc_maxR, &foc_cyc_sumR);
+    foc_cyc_end(cycR_start, foc_cyc_bufR, &foc_cyc_minR, &foc_cyc_maxR, &foc_cyc_sumR, foc_cyc_histR);
     #endif
     #endif
 

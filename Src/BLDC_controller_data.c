@@ -3,9 +3,9 @@
  *
  * Code generated for Simulink model 'BLDC_controller'.
  *
- * Model version                  : 16.99
+ * Model version                  : 16.101
  * Simulink Coder version         : 25.1 (R2025a) 21-Nov-2024
- * C/C++ source code generated on : Thu Aug 13 05:39:44 2026
+ * C/C++ source code generated on : Sat Aug 22 16:19:28 2026
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: ARM Compatible->ARM Cortex-M
@@ -26,11 +26,6 @@ P rtP_Left = {
    * Referenced by: '<S15>/Constant3'
    */
   65537U,
-
-  /* Variable: cf_speedCoef
-   * Referenced by: '<S21>/cf_speedCoef'
-   */
-  41667U,
 
   /* Variable: t_errDequal
    * Referenced by: '<S36>/t_errDequal'
@@ -144,12 +139,12 @@ P rtP_Left = {
   /* Variable: cf_idKi
    * Referenced by: '<S86>/cf_idKi2'
    */
-  16749U,
+  8374U,
 
   /* Variable: cf_iqKi
    * Referenced by: '<S85>/cf_iqKi1'
    */
-  16749U,
+  8374U,
 
   /* Variable: cf_currFilt
    * Referenced by: '<S69>/cf_currFilt'
@@ -178,17 +173,22 @@ P rtP_Left = {
   /* Variable: cf_idKp
    * Referenced by: '<S86>/cf_idKp2'
    */
-  3206U,
+  1603U,
 
   /* Variable: cf_iqKp
    * Referenced by: '<S85>/cf_iqKp1'
    */
-  3206U,
+  1603U,
 
   /* Variable: a_cpr
    * Referenced by: '<S15>/Constant'
    */
   65535U,
+
+  /* Variable: cf_speedCoef
+   * Referenced by: '<S21>/cf_speedCoef'
+   */
+  41667U,
 
   /* Variable: n_polePairs
    * Referenced by: '<S15>/n_polePairs1'

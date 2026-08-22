@@ -734,7 +734,7 @@
  * - Optional: define CFG_USE_BW_PI_CALC to auto-compute gains from bandwidth, L, R, and VBUS.
  */
 #define CFG_TARGET_BANDWIDTH_HZ   200.0f                 // [Hz] current-loop target bandwidth
-#define CFG_MOTOR_L_H             0.001f  // [H] phase inductance 
+#define CFG_MOTOR_L_H             0.0005f  // [H] phase inductance 
 #define CFG_MOTOR_R_OHM           0.75f    // [Ohm] phase-to-neutral resistance (one phase)
 #else
 //Q axis control gains
