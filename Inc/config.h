@@ -726,7 +726,7 @@
 //#define EXTBRK_USE_CH4            // PA3
 #endif
 
-#define BAT_CELLS               6      // battery number of cells. Normal Hoverboard battery: 10s = 36V nominal, 42V full charge. For 36V battery use 10, for 24V use 6, for 48V use 13 etc.
+#define BAT_CELLS               13      // battery number of cells. Normal Hoverboard battery: 10s = 36V nominal, 42V full charge. For 36V battery use 10, for 24V use 6, for 48V use 13 etc.
 #ifdef CFG_USE_BW_PI_CALC
 /*
  * D/Q current-loop PI tuning
@@ -734,8 +734,8 @@
  * - Optional: define CFG_USE_BW_PI_CALC to auto-compute gains from bandwidth, L, R, and VBUS.
  */
 #define CFG_TARGET_BANDWIDTH_HZ   200.0f                 // [Hz] current-loop target bandwidth
-#define CFG_MOTOR_L_H             0.0004f  // [H] phase inductance 
-#define CFG_MOTOR_R_OHM           0.5f    // [Ohm] phase-to-neutral resistance (one phase)
+#define CFG_MOTOR_L_H             0.001f  // [H] phase inductance 
+#define CFG_MOTOR_R_OHM           0.75f    // [Ohm] phase-to-neutral resistance (one phase)
 #else
 //Q axis control gains
 #define QP            0.3f                                  //[-] P gain

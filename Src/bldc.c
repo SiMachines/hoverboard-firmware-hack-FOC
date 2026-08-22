@@ -27,8 +27,74 @@
 #include "setup.h"
 #include "config.h"
 #include "util.h"
+#include <stdio.h>   /* for printf in FOC_CYCLE_MEASURE report */
 
 
+
+
+// ============================================================================
+// FOC step cycle-counting instrumentation (DWT cycle counter, Cortex-M3)
+// ----------------------------------------------------------------------------
+// Measures the number of CPU cycles spent inside BLDC_controller_step() for
+// the Left and Right motors. Reports min/avg/max over a rolling window.
+//
+// Enable with:  -DFOC_CYCLE_MEASURE
+// The report is printed from the main loop via foc_cycle_report().
+// ============================================================================
+#ifdef FOC_CYCLE_MEASURE
+
+// DWT cycle counter access (CoreDebug DWT_CYCCNT). Cortex-M3/M4 only.
+#define DWT_CYCCNT  (*(volatile uint32_t *)0xE0001004UL)
+
+// Rolling-window statistics (power-of-two window for cheap modulo)
+#define FOC_CYC_WIN_BITS   8
+#define FOC_CYC_WIN_SIZE   (1u << FOC_CYC_WIN_BITS)
+#define FOC_CYC_WIN_MASK   (FOC_CYC_WIN_SIZE - 1u)
+
+static uint32_t foc_cyc_bufL[FOC_CYC_WIN_SIZE] __attribute__((unused));
+static uint32_t foc_cyc_bufR[FOC_CYC_WIN_SIZE] __attribute__((unused));
+static uint32_t foc_cyc_idx = 0;
+static uint32_t foc_cyc_minL = 0xFFFFFFFFu, foc_cyc_maxL = 0;
+static uint32_t foc_cyc_minR = 0xFFFFFFFFu, foc_cyc_maxR = 0;
+static uint64_t foc_cyc_sumL = 0, foc_cyc_sumR = 0;
+static uint32_t foc_cyc_cnt  = 0;
+
+// Snapshot the cycle counter at the start of the FOC step.
+static inline uint32_t foc_cyc_start(void) {
+  return DWT_CYCCNT;
+}
+
+// Record the elapsed cycles for one motor step.
+static inline void foc_cyc_end(uint32_t start, uint32_t *buf,
+                               uint32_t *minv, uint32_t *maxv, uint64_t *sumv) {
+  uint32_t elapsed = (uint32_t)(DWT_CYCCNT - start);
+  uint32_t idx = foc_cyc_idx & FOC_CYC_WIN_MASK;
+  // Remove the value being overwritten from the running sum
+  *sumv -= buf[idx];
+  buf[idx] = elapsed;
+  *sumv += elapsed;
+  if (elapsed < *minv) *minv = elapsed;
+  if (elapsed > *maxv) *maxv = elapsed;
+}
+
+// Called once per DMA interrupt (after both motor steps) to advance the window.
+static inline void foc_cyc_tick(void) {
+  foc_cyc_idx++;
+  foc_cyc_cnt++;
+}
+
+// Report the measured cycles over the debug serial. Call from the main loop.
+void foc_cycle_report(void) {
+  if (foc_cyc_cnt == 0) return;
+  uint32_t n = (foc_cyc_cnt < FOC_CYC_WIN_SIZE) ? foc_cyc_cnt : FOC_CYC_WIN_SIZE;
+  uint32_t avgL = (uint32_t)(foc_cyc_sumL / n);
+  uint32_t avgR = (uint32_t)(foc_cyc_sumR / n);
+  printf("FOC cycles  L[min/avg/max]=%lu/%lu/%lu  R[min/avg/max]=%lu/%lu/%lu  n=%lu\r\n",
+         foc_cyc_minL, avgL, foc_cyc_maxL,
+         foc_cyc_minR, avgR, foc_cyc_maxR, n);
+}
+
+#endif // FOC_CYCLE_MEASURE
 
 
 // Matlab includes and defines - from auto-code generation
@@ -292,8 +358,14 @@ void DMA1_Channel1_IRQHandler(void) {
     #endif
     
     /* Step the controller */
-    #ifdef MOTOR_LEFT_ENA    
+    #ifdef MOTOR_LEFT_ENA
+    #ifdef FOC_CYCLE_MEASURE
+    uint32_t cycL_start = foc_cyc_start();
+    #endif
     BLDC_controller_step(rtM_Left);
+    #ifdef FOC_CYCLE_MEASURE
+    foc_cyc_end(cycL_start, foc_cyc_bufL, &foc_cyc_minL, &foc_cyc_maxL, &foc_cyc_sumL);
+    #endif
     #endif
 
 
@@ -404,7 +476,13 @@ void DMA1_Channel1_IRQHandler(void) {
     
     /* Step the controller */
     #ifdef MOTOR_RIGHT_ENA
+    #ifdef FOC_CYCLE_MEASURE
+    uint32_t cycR_start = foc_cyc_start();
+    #endif
     BLDC_controller_step(rtM_Right);
+    #ifdef FOC_CYCLE_MEASURE
+    foc_cyc_end(cycR_start, foc_cyc_bufR, &foc_cyc_minR, &foc_cyc_maxR, &foc_cyc_sumR);
+    #endif
     #endif
 
     /* Get motor outputs here */
@@ -471,6 +549,9 @@ void DMA1_Channel1_IRQHandler(void) {
   }
   #endif
   /* Indicate task complete */
+  #ifdef FOC_CYCLE_MEASURE
+  foc_cyc_tick();
+  #endif
   OverrunFlag = false;
  
  // ###############################################################################
