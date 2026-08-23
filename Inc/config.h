@@ -719,7 +719,7 @@
 //#define ENCODER_Y                 //enable Y encoder to left motor
 #define INTBRK_L_EN                 //enable brake resistor control on PHASE A left side driver, do not disable if break reistor is connected 
 //#define EXTBRK_EN                 // enable brake resistor control pin on left uart port, pick PA2 or PA3 below
-#define CFG_USE_BW_PI_CALC          // use automatic PI gain calculation based on bandwidth, L, R, and VBUS. Comment-out to use manual QP/QI/DP/DI values below.
+//#define CFG_USE_BW_PI_CALC          // use automatic PI gain calculation based on bandwidth, L, R, and VBUS. Comment-out to use manual QP/QI/DP/DI values below.
 //#define FeedForward                 // Experimental, this adds a component to the control output that is proportional to the input command, this can help improve response.
 #ifdef EXTBRK_EN                         
 #define EXTBRK_USE_CH3              // PA2      
@@ -733,7 +733,7 @@
  * - Default: use manual QP/QI/DP/DI values.
  * - Optional: define CFG_USE_BW_PI_CALC to auto-compute gains from bandwidth, L, R, and VBUS.
  */
-#define CFG_TARGET_BANDWIDTH_HZ   200.0f                 // [Hz] current-loop target bandwidth
+#define CFG_TARGET_BANDWIDTH_HZ   100.0f                 // [Hz] current-loop target bandwidth
 #define CFG_MOTOR_L_H             0.0004f  // [H] phase inductance 
 #define CFG_MOTOR_R_OHM           0.5f    // [Ohm] phase-to-neutral resistance (one phase)
 #else
@@ -761,12 +761,12 @@
 #ifdef ENCODER_X
 #define ENCODER_CPR              65535                 //Enter your ENCODER CPR here
 #define ENCODER_X_PPR            (ENCODER_CPR+1)/4     // Pulses per revolution
-#define ALIGNMENT_X_POWER        3276      // [-] Voltage used for sensor alignment. [-16000, 16000]
+#define ALIGNMENT_X_POWER        1638      // [-] Voltage used for sensor alignment. [-16000, 16000]
 #endif
 #ifdef ENCODER_Y
 #define ENCODER_CPR              65535                //Enter your ENCODER CPR here
 #define ENCODER_Y_PPR            (ENCODER_CPR+1)/4    // Pulses per revolution 
-#define ALIGNMENT_Y_POWER        3276        // [-] Voltage used for sensor alignment. [-16000, 16000]
+#define ALIGNMENT_Y_POWER        1638        // [-] Voltage used for sensor alignment. [-16000, 16000]
 #endif
 
   #define FLASH_WRITE_KEY        0x1011    // Flash memory writing key.
