@@ -9,6 +9,7 @@ version = 2
 sample_frequency_hz = 5000
 max_points = 50000
 max_viewport_points = 5000
+viewport_width_ms = 1000.000000
 refresh_on_elf_change = true
 stop_acq_on_elf_change = true
 probe_type = 0
@@ -19,17 +20,32 @@ probe_sn = 066FFF303931594E43133158
 should_log = false
 log_directory = 
 gdb_command = ./gdb
+elf_parser = gdb
 recorder_enabled = false
 restart_on_group_change = true
 keep_connection = true
 ip_address = 127.0.0.1
 port = 3333
+probe_baudrate = 115200
+jlink_script_enabled = false
+jlink_script_path = 
+jlink_connection_type = 0
+cubeprog_api_path = 
+mcp_server_port = 8765
+
+[flashing]
+file_path = 
+command = 
+use_elf_file = false
+timeout_enabled = false
+timeout_seconds = 5
 
 [trace_settings]
 core_frequency = 108000
 trace_prescaler = 1
 max_points = 10000
 max_viewport_points_percent = 10
+viewport_width_ms = 5.000000
 trigger_channel = 0
 trigger_level = 0.000000
 timeout = 2
@@ -43,7 +59,7 @@ log_directory =
 [var0]
 name = AHBPrescTable[0]
 tracked_name = AHBPrescTable[0]
-address = 134246848
+address = 134247248
 type = 1
 color = 1289858185
 should_update_from_elf = true
@@ -51,12 +67,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var1]
 name = APBPrescTable[0]
 tracked_name = APBPrescTable[0]
-address = 134246864
+address = 134247264
 type = 1
 color = 2558791336
 should_update_from_elf = true
@@ -64,12 +84,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var2]
 name = HS_PWM
 tracked_name = HS_PWM
-address = 536871850
+address = 536871722
 type = 4
 color = 3491392789
 should_update_from_elf = true
@@ -77,12 +101,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var3]
 name = I_BusR
 tracked_name = I_BusR
-address = 536871492
+address = 536871396
 type = 4
 color = 1458832365
 should_update_from_elf = true
@@ -90,12 +118,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var4]
 name = SystemCoreClock
 tracked_name = SystemCoreClock
-address = 536871288
+address = 536871196
 type = 5
 color = 2706973451
 should_update_from_elf = true
@@ -103,12 +135,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var5]
 name = adc_buffer.adc3.value.batt1
 tracked_name = adc_buffer.adc3.value.batt1
-address = 536873090
+address = 536872962
 type = 3
 color = 312549140
 should_update_from_elf = true
@@ -116,12 +152,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var6]
 name = batVoltage
 tracked_name = batVoltage
-address = 536871280
+address = 536871188
 type = 4
 color = 3865005932
 should_update_from_elf = true
@@ -129,12 +169,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var7]
 name = batVoltageCalib
 tracked_name = batVoltageCalib
-address = 536872288
+address = 536872160
 type = 4
 color = 2690207679
 should_update_from_elf = true
@@ -142,12 +186,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var8]
 name = batVoltageFixdt
 tracked_name = batVoltageFixdt
-address = 536871284
+address = 536871192
 type = 6
 color = 1680897174
 should_update_from_elf = true
@@ -155,12 +203,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var9]
 name = cmdL
 tracked_name = cmdL
-address = 536872278
+address = 536872150
 type = 4
 color = 3935895952
 should_update_from_elf = true
@@ -168,12 +220,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var10]
 name = ctrlModReq
 tracked_name = ctrlModReq
-address = 536871330
+address = 536871238
 type = 1
 color = 2953119123
 should_update_from_elf = true
@@ -181,12 +237,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var11]
 name = ctrlModReqRaw
 tracked_name = ctrlModReqRaw
-address = 536871331
+address = 536871239
 type = 1
 color = 4256145955
 should_update_from_elf = true
@@ -194,12 +254,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var12]
 name = curL_DC
 tracked_name = curL_DC
-address = 536871508
+address = 536871412
 type = 4
 color = 3533883582
 should_update_from_elf = true
@@ -207,12 +271,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var13]
 name = curR_DC
 tracked_name = curR_DC
-address = 536871514
+address = 536871418
 type = 4
 color = 3938188896
 should_update_from_elf = true
@@ -220,12 +288,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var14]
 name = curR_phaB
 tracked_name = curR_phaB
-address = 536871516
+address = 536871420
 type = 4
 color = 125436017
 should_update_from_elf = true
@@ -233,12 +305,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var15]
 name = curR_phaC
 tracked_name = curR_phaC
-address = 536871518
+address = 536871422
 type = 4
 color = 3564542464
 should_update_from_elf = true
@@ -246,12 +322,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var16]
 name = dcLinkProtection
 tracked_name = dcLinkProtection
-address = 536871693
+address = 536871565
 type = 1
 color = 1636110504
 should_update_from_elf = true
@@ -259,12 +339,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var17]
 name = duty_scaled
 tracked_name = duty_scaled
-address = 536871592
+address = 536871480
 type = 5
 color = 2503485041
 should_update_from_elf = true
@@ -272,12 +356,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var18]
 name = duty_ticks
 tracked_name = duty_ticks
-address = 536871596
+address = 536871484
 type = 5
 color = 2236152406
 should_update_from_elf = true
@@ -285,12 +373,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var19]
 name = enable
 tracked_name = enable
-address = 536871520
+address = 536871424
 type = 1
 color = 247144689
 should_update_from_elf = true
@@ -298,12 +390,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var20]
 name = enableFin
 tracked_name = enableFin
-address = 536871521
+address = 536871425
 type = 1
 color = 2792426249
 should_update_from_elf = true
@@ -311,12 +407,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var21]
 name = encoder_x.ENCODER_COUNT
 tracked_name = encoder_x.ENCODER_COUNT
-address = 536871716
+address = 536871588
 type = 6
 color = 452854037
 should_update_from_elf = true
@@ -324,12 +424,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var22]
 name = encoder_x.ali
 tracked_name = encoder_x.ali
-address = 536871697
+address = 536871569
 type = 1
 color = 1852216155
 should_update_from_elf = true
@@ -337,12 +441,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var23]
 name = encoder_x.align_fault
 tracked_name = encoder_x.align_fault
-address = 536871698
+address = 536871570
 type = 1
 color = 1665337276
 should_update_from_elf = true
@@ -350,12 +458,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var24]
 name = encoder_x.align_ini_pos
 tracked_name = encoder_x.align_ini_pos
-address = 536871732
+address = 536871604
 type = 6
 color = 1887295555
 should_update_from_elf = true
@@ -363,12 +475,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var25]
 name = encoder_x.aligned_count
 tracked_name = encoder_x.aligned_count
-address = 536871708
+address = 536871580
 type = 5
 color = 1856544265
 should_update_from_elf = true
@@ -376,12 +492,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var26]
 name = encoder_x.emulated_mech_count
 tracked_name = encoder_x.emulated_mech_count
-address = 536871760
+address = 536871632
 type = 6
 color = 2928433431
 should_update_from_elf = true
@@ -389,12 +509,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var27]
 name = encoder_x.normalized
 tracked_name = encoder_x.normalized
-address = 536871712
+address = 536871584
 type = 6
 color = 2361159128
 should_update_from_elf = true
@@ -402,12 +526,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var28]
 name = encoder_x.offset
 tracked_name = encoder_x.offset
-address = 536871700
+address = 536871572
 type = 6
 color = 190791540
 should_update_from_elf = true
@@ -415,7 +543,11 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var29]
 name = estop_change_tick
@@ -428,12 +560,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var30]
 name = estop_flag
 tracked_name = estop_flag
-address = 536871784
+address = 536871656
 type = 1
 color = 827028463
 should_update_from_elf = true
@@ -441,12 +577,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var31]
 name = estop_latch_flag
 tracked_name = estop_latch_flag
-address = 536871785
+address = 536871657
 type = 1
 color = 1923524020
 should_update_from_elf = true
@@ -454,7 +594,11 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var32]
 name = estop_press_tick
@@ -467,12 +611,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var33]
 name = estop_sample_prev
 tracked_name = estop_sample_prev
-address = 536871786
+address = 536871658
 type = 1
 color = 2267733679
 should_update_from_elf = true
@@ -480,12 +628,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var34]
 name = estop_state
 tracked_name = estop_state
-address = 536871787
+address = 536871659
 type = 1
 color = 2838503868
 should_update_from_elf = true
@@ -493,12 +645,186 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [var35]
+name = foc_cyc_avgL
+tracked_name = foc_cyc_avgL
+address = 536871436
+type = 5
+color = 4035179243
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var36]
+name = foc_cyc_avgR
+tracked_name = foc_cyc_avgR
+address = 536871440
+type = 5
+color = 2057160095
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var37]
+name = foc_cyc_bufL[0]
+tracked_name = foc_cyc_bufL[0]
+address = 536872268
+type = 5
+color = 1660340891
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var38]
+name = foc_cyc_bufR[0]
+tracked_name = foc_cyc_bufR[0]
+address = 536873292
+type = 5
+color = 1908940779
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var39]
+name = foc_cyc_cnt
+tracked_name = foc_cyc_cnt
+address = 536871444
+type = 5
+color = 892732962
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var40]
+name = foc_cyc_idx
+tracked_name = foc_cyc_idx
+address = 536871448
+type = 5
+color = 3515521884
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var41]
+name = foc_cyc_maxR
+tracked_name = foc_cyc_maxR
+address = 536871452
+type = 5
+color = 2903139254
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var42]
+name = foc_cyc_minR
+tracked_name = foc_cyc_minR
+address = 536871172
+type = 5
+color = 4060617409
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var43]
+name = foc_cyc_sumL
+tracked_name = foc_cyc_sumL
+address = 536871456
+type = 5
+color = 654690688
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var44]
+name = foc_cyc_sumR
+tracked_name = foc_cyc_sumR
+address = 536871460
+type = 5
+color = 653900618
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var45]
 name = g_clockDiag.hclk_hz
 tracked_name = g_clockDiag.hclk_hz
-address = 536871636
+address = 536871516
 type = 5
 color = 102678011
 should_update_from_elf = true
@@ -506,12 +832,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var36]
+[var46]
 name = g_clockDiag.pclk1_hz
 tracked_name = g_clockDiag.pclk1_hz
-address = 536871640
+address = 536871520
 type = 5
 color = 900192280
 should_update_from_elf = true
@@ -519,12 +849,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var37]
+[var47]
 name = g_clockDiag.pclk2_hz
 tracked_name = g_clockDiag.pclk2_hz
-address = 536871644
+address = 536871524
 type = 5
 color = 3932141256
 should_update_from_elf = true
@@ -532,12 +866,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var38]
+[var48]
 name = g_clockDiag.sysclk_hz
 tracked_name = g_clockDiag.sysclk_hz
-address = 536871632
+address = 536871512
 type = 5
 color = 820453812
 should_update_from_elf = true
@@ -545,12 +883,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var39]
+[var49]
 name = g_clockDiag.tim_apb1_hz
 tracked_name = g_clockDiag.tim_apb1_hz
-address = 536871648
+address = 536871528
 type = 5
 color = 3193605632
 should_update_from_elf = true
@@ -558,12 +900,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var40]
+[var50]
 name = g_clockDiag.tim_apb2_hz
 tracked_name = g_clockDiag.tim_apb2_hz
-address = 536871652
+address = 536871532
 type = 5
 color = 1850542125
 should_update_from_elf = true
@@ -571,12 +917,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var41]
+[var51]
 name = hadc1.ErrorCode
 tracked_name = hadc1.ErrorCode
-address = 536872952
+address = 536872824
 type = 5
 color = 3870068172
 should_update_from_elf = true
@@ -584,12 +934,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var42]
+[var52]
 name = hadc2.ErrorCode
 tracked_name = hadc2.ErrorCode
-address = 536872544
+address = 536872416
 type = 5
 color = 797291389
 should_update_from_elf = true
@@ -597,12 +951,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var43]
+[var53]
 name = hw_pwm_ready
 tracked_name = hw_pwm_ready
-address = 536871656
+address = 536871536
 type = 1
 color = 1263498501
 should_update_from_elf = true
@@ -610,12 +968,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var44]
+[var54]
 name = inactivity_timeout_counter
 tracked_name = inactivity_timeout_counter
-address = 536871660
+address = 536871540
 type = 5
 color = 3060499347
 should_update_from_elf = true
@@ -623,12 +985,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var45]
+[var55]
 name = input1[0].cmd
 tracked_name = input1[0].cmd
-address = 536871334
+address = 536871242
 type = 4
 color = 2442275513
 should_update_from_elf = true
@@ -636,12 +1002,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var46]
+[var56]
 name = input1[0].raw
 tracked_name = input1[0].raw
-address = 536871332
+address = 536871240
 type = 4
 color = 499240209
 should_update_from_elf = true
@@ -649,12 +1019,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var47]
+[var57]
 name = input2[0].cmd
 tracked_name = input2[0].cmd
-address = 536871348
+address = 536871256
 type = 4
 color = 1918787263
 should_update_from_elf = true
@@ -662,12 +1036,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var48]
+[var58]
 name = input2[0].raw
 tracked_name = input2[0].raw
-address = 536871346
+address = 536871254
 type = 4
 color = 666153329
 should_update_from_elf = true
@@ -675,12 +1053,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var49]
+[var59]
 name = overcurrent_fault_flag
 tracked_name = overcurrent_fault_flag
-address = 536871791
+address = 536871663
 type = 1
 color = 4002825641
 should_update_from_elf = true
@@ -688,9 +1070,13 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var50]
+[var60]
 name = perf_bldc_cycles_last
 tracked_name = perf_bldc_cycles_last
 address = 536871552
@@ -701,9 +1087,13 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var51]
+[var61]
 name = perf_bldc_cycles_max
 tracked_name = perf_bldc_cycles_max
 address = 536871556
@@ -714,9 +1104,13 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var52]
+[var62]
 name = perf_bldc_overrun_count
 tracked_name = perf_bldc_overrun_count
 address = 536871560
@@ -727,9 +1121,13 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var53]
+[var63]
 name = perf_bldc_overrun_latched
 tracked_name = perf_bldc_overrun_latched
 address = 536871564
@@ -740,9 +1138,13 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var54]
+[var64]
 name = perf_main_cycles_last
 tracked_name = perf_main_cycles_last
 address = 536871664
@@ -753,9 +1155,13 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var55]
+[var65]
 name = perf_main_cycles_max
 tracked_name = perf_main_cycles_max
 address = 536871668
@@ -766,12 +1172,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var56]
+[var66]
 name = period_ticks
 tracked_name = period_ticks
-address = 536871608
+address = 536871488
 type = 5
 color = 2589109822
 should_update_from_elf = true
@@ -779,12 +1189,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var57]
+[var67]
 name = pwm_captured_ch1_value
 tracked_name = pwm_captured_ch1_value
-address = 536871612
+address = 536871492
 type = 4
 color = 2644077910
 should_update_from_elf = true
@@ -792,12 +1206,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var58]
+[var68]
 name = pwm_captured_ch2_value
 tracked_name = pwm_captured_ch2_value
-address = 536871614
+address = 536871494
 type = 4
 color = 2332098501
 should_update_from_elf = true
@@ -805,12 +1223,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var59]
+[var69]
 name = pwm_res
 tracked_name = pwm_res
-address = 536871568
+address = 536871456
 type = 3
 color = 1978660271
 should_update_from_elf = true
@@ -818,12 +1240,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var60]
+[var70]
 name = pwml
 tracked_name = pwml
-address = 536871572
+address = 536871460
 type = 6
 color = 1440515102
 should_update_from_elf = true
@@ -831,12 +1257,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var61]
+[var71]
 name = pwmr
 tracked_name = pwmr
-address = 536871576
+address = 536871464
 type = 6
 color = 2362673880
 should_update_from_elf = true
@@ -844,12 +1274,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var62]
+[var72]
 name = rtConstP.vec_hallToPos_Value[0]
 tracked_name = rtConstP.vec_hallToPos_Value[0]
-address = 134246840
+address = 134247240
 type = 2
 color = 1725119929
 should_update_from_elf = true
@@ -857,12 +1291,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var63]
+[var73]
 name = rtDW_Left.z_ctrlMod
 tracked_name = rtDW_Left.z_ctrlMod
-address = 536873611
+address = 536873483
 type = 1
 color = 4125985628
 should_update_from_elf = true
@@ -870,12 +1308,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var64]
+[var74]
 name = rtDW_Right.Merge
 tracked_name = rtDW_Right.Merge
-address = 536873794
+address = 536873666
 type = 4
 color = 2130504902
 should_update_from_elf = true
@@ -883,12 +1325,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var65]
+[var75]
 name = rtDW_Right.Merge1
 tracked_name = rtDW_Right.Merge1
-address = 536873824
+address = 536873696
 type = 4
 color = 623520672
 should_update_from_elf = true
@@ -896,12 +1342,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var66]
+[var76]
 name = rtDW_Right.Switch1
 tracked_name = rtDW_Right.Switch1
-address = 536873876
+address = 536873752
 type = 1
 color = 3953655387
 should_update_from_elf = true
@@ -909,12 +1359,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var67]
+[var77]
 name = rtDW_Right.r_cos_M1_1
 tracked_name = rtDW_Right.r_cos_M1_1
-address = 536873838
+address = 536873708
 type = 4
 color = 3827194309
 should_update_from_elf = true
@@ -922,12 +1376,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var68]
+[var78]
 name = rtDW_Right.r_sin_M1_1
 tracked_name = rtDW_Right.r_sin_M1_1
-address = 536873836
+address = 536873706
 type = 4
 color = 1611325421
 should_update_from_elf = true
@@ -935,12 +1393,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var69]
+[var79]
 name = rtDW_Right.z_ctrlMod
 tracked_name = rtDW_Right.z_ctrlMod
-address = 536873875
+address = 536873747
 type = 1
 color = 2646235236
 should_update_from_elf = true
@@ -948,12 +1410,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var70]
+[var80]
 name = rtP_Left.b_angleMeasEna
 tracked_name = rtP_Left.b_angleMeasEna
-address = 536871258
+address = 536871166
 type = 1
 color = 3600477316
 should_update_from_elf = true
@@ -961,12 +1427,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var71]
+[var81]
 name = rtP_Left.b_diagEna
 tracked_name = rtP_Left.b_diagEna
-address = 536871260
+address = 536871168
 type = 1
 color = 1264814372
 should_update_from_elf = true
@@ -974,12 +1444,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var72]
+[var82]
 name = rtP_Left.cf_currFilt
 tracked_name = rtP_Left.cf_currFilt
-address = 536871238
+address = 536871146
 type = 3
 color = 207290592
 should_update_from_elf = true
@@ -987,12 +1461,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var73]
+[var83]
 name = rtP_Left.dV_openRate
 tracked_name = rtP_Left.dV_openRate
-address = 536871188
+address = 536871096
 type = 6
 color = 4179561812
 should_update_from_elf = true
@@ -1000,12 +1478,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var74]
+[var84]
 name = rtP_Left.i_max
 tracked_name = rtP_Left.i_max
-address = 536871210
+address = 536871118
 type = 4
 color = 138157055
 should_update_from_elf = true
@@ -1013,12 +1495,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var75]
+[var85]
 name = rtP_Left.z_ctrlTypSel
 tracked_name = rtP_Left.z_ctrlTypSel
-address = 536871262
+address = 536871170
 type = 1
 color = 1085465871
 should_update_from_elf = true
@@ -1026,12 +1512,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var76]
+[var86]
 name = rtP_Right.b_diagEna
 tracked_name = rtP_Right.b_diagEna
-address = 536873316
+address = 536873188
 type = 1
 color = 600380126
 should_update_from_elf = true
@@ -1039,12 +1529,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var77]
+[var87]
 name = rtP_Right.cf_currFilt
 tracked_name = rtP_Right.cf_currFilt
-address = 536873294
+address = 536873166
 type = 3
 color = 3728818611
 should_update_from_elf = true
@@ -1052,12 +1546,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var78]
+[var88]
 name = rtP_Right.cf_idKi
 tracked_name = rtP_Right.cf_idKi
-address = 536873296
+address = 536873162
 type = 3
 color = 3213269932
 should_update_from_elf = true
@@ -1065,12 +1563,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var79]
+[var89]
 name = rtP_Right.cf_idKp
 tracked_name = rtP_Right.cf_idKp
-address = 536873288
+address = 536873174
 type = 3
 color = 1276601983
 should_update_from_elf = true
@@ -1078,12 +1580,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var80]
+[var90]
 name = rtP_Right.cf_iqKi
 tracked_name = rtP_Right.cf_iqKi
-address = 536873298
+address = 536873164
 type = 3
 color = 4159513164
 should_update_from_elf = true
@@ -1091,12 +1597,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var81]
+[var91]
 name = rtP_Right.cf_iqKp
 tracked_name = rtP_Right.cf_iqKp
-address = 536873290
+address = 536873176
 type = 3
 color = 3394495745
 should_update_from_elf = true
@@ -1104,12 +1614,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var82]
+[var92]
 name = rtP_Right.i_max
 tracked_name = rtP_Right.i_max
-address = 536873266
+address = 536873138
 type = 4
 color = 682578303
 should_update_from_elf = true
@@ -1117,9 +1631,13 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var83]
+[var93]
 name = rtU_Left.a_mechAngle
 tracked_name = rtU_Left.a_mechAngle
 address = 536873734
@@ -1130,12 +1648,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var84]
+[var94]
 name = rtU_Left.b_hallA
 tracked_name = rtU_Left.b_hallA
-address = 536873900
+address = 536873772
 type = 1
 color = 2848917545
 should_update_from_elf = true
@@ -1143,12 +1665,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var85]
+[var95]
 name = rtU_Left.b_hallB
 tracked_name = rtU_Left.b_hallB
-address = 536873901
+address = 536873773
 type = 1
 color = 3912171689
 should_update_from_elf = true
@@ -1156,12 +1682,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var86]
+[var96]
 name = rtU_Left.b_hallC
 tracked_name = rtU_Left.b_hallC
-address = 536873902
+address = 536873774
 type = 1
 color = 2789988628
 should_update_from_elf = true
@@ -1169,12 +1699,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var87]
+[var97]
 name = rtU_Left.b_motEna
 tracked_name = rtU_Left.b_motEna
-address = 536873896
+address = 536873768
 type = 1
 color = 2628093910
 should_update_from_elf = true
@@ -1182,12 +1716,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var88]
+[var98]
 name = rtU_Left.r_inpTgt
 tracked_name = rtU_Left.r_inpTgt
-address = 536873898
+address = 536873770
 type = 4
 color = 407094748
 should_update_from_elf = true
@@ -1195,9 +1733,30 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var89]
+[var99]
+name = rtU_Right.a_encoderCNT
+tracked_name = rtU_Right.a_encoderCNT
+address = 536873534
+type = 3
+color = 680515249
+should_update_from_elf = true
+shift = 0
+mask = 4294967295
+high_level_type = 0
+value_to_write = 0.000000
+secondary_value_to_write = 0.000000
+do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
+
+[var100]
 name = rtU_Right.a_mechAngle
 tracked_name = rtU_Right.a_mechAngle
 address = 536873506
@@ -1208,12 +1767,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var90]
+[var101]
 name = rtU_Right.b_motEna
 tracked_name = rtU_Right.b_motEna
-address = 536873648
+address = 536873520
 type = 1
 color = 1231085164
 should_update_from_elf = true
@@ -1221,12 +1784,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var91]
+[var102]
 name = rtU_Right.r_inpTgt
 tracked_name = rtU_Right.r_inpTgt
-address = 536873650
+address = 536873522
 type = 4
 color = 1630017266
 should_update_from_elf = true
@@ -1234,12 +1801,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var92]
+[var103]
 name = rtU_Right.z_ctrlModReq
 tracked_name = rtU_Right.z_ctrlModReq
-address = 536873649
+address = 536873521
 type = 1
 color = 1534684961
 should_update_from_elf = true
@@ -1247,12 +1818,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var93]
+[var104]
 name = rtY_Left.a_elecAngle
 tracked_name = rtY_Left.a_elecAngle
-address = 536873642
+address = 536873514
 type = 4
 color = 4285916869
 should_update_from_elf = true
@@ -1260,12 +1835,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var94]
+[var105]
 name = rtY_Left.id
 tracked_name = rtY_Left.id
-address = 536873646
+address = 536873518
 type = 4
 color = 1498607542
 should_update_from_elf = true
@@ -1273,12 +1852,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var95]
+[var106]
 name = rtY_Left.iq
 tracked_name = rtY_Left.iq
-address = 536873644
+address = 536873516
 type = 4
 color = 2954885856
 should_update_from_elf = true
@@ -1286,12 +1869,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var96]
+[var107]
 name = rtY_Left.z_errCode
 tracked_name = rtY_Left.z_errCode
-address = 536873638
+address = 536873510
 type = 1
 color = 676596633
 should_update_from_elf = true
@@ -1299,12 +1886,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var97]
+[var108]
 name = rtY_Right.DC_phaA
 tracked_name = rtY_Right.DC_phaA
-address = 536873320
+address = 536873192
 type = 4
 color = 170393344
 should_update_from_elf = true
@@ -1312,12 +1903,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var98]
+[var109]
 name = rtY_Right.DC_phaB
 tracked_name = rtY_Right.DC_phaB
-address = 536873322
+address = 536873194
 type = 4
 color = 2398829647
 should_update_from_elf = true
@@ -1325,12 +1920,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var99]
+[var110]
 name = rtY_Right.DC_phaC
 tracked_name = rtY_Right.DC_phaC
-address = 536873324
+address = 536873196
 type = 4
 color = 1795162367
 should_update_from_elf = true
@@ -1338,12 +1937,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var100]
+[var111]
 name = rtY_Right.a_elecAngle
 tracked_name = rtY_Right.a_elecAngle
-address = 536873330
+address = 536873202
 type = 4
 color = 334882037
 should_update_from_elf = true
@@ -1351,12 +1954,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var101]
+[var112]
 name = rtY_Right.id
 tracked_name = rtY_Right.id
-address = 536873334
+address = 536873206
 type = 4
 color = 3158115999
 should_update_from_elf = true
@@ -1364,12 +1971,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var102]
+[var113]
 name = rtY_Right.iq
 tracked_name = rtY_Right.iq
-address = 536873332
+address = 536873204
 type = 4
 color = 2950374487
 should_update_from_elf = true
@@ -1377,12 +1988,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var103]
+[var114]
 name = rtY_Right.n_mot
 tracked_name = rtY_Right.n_mot
-address = 536873328
+address = 536873200
 type = 4
 color = 1263625395
 should_update_from_elf = true
@@ -1390,12 +2005,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var104]
+[var115]
 name = rtY_Right.z_errCode
 tracked_name = rtY_Right.z_errCode
-address = 536873326
+address = 536873198
 type = 1
 color = 2763344376
 should_update_from_elf = true
@@ -1403,12 +2022,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var105]
+[var116]
 name = speedAvg
 tracked_name = speedAvg
-address = 536873240
+address = 536873112
 type = 4
 color = 2743653140
 should_update_from_elf = true
@@ -1416,12 +2039,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var106]
+[var117]
 name = speedAvgAbs
 tracked_name = speedAvgAbs
-address = 536873932
+address = 536873804
 type = 4
 color = 2480690923
 should_update_from_elf = true
@@ -1429,12 +2056,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var107]
+[var118]
 name = speedRateFixdt
 tracked_name = speedRateFixdt
-address = 536871676
+address = 536871548
 type = 4
 color = 3076039056
 should_update_from_elf = true
@@ -1442,12 +2073,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var108]
+[var119]
 name = steerFixdt
 tracked_name = steerFixdt
-address = 536871680
+address = 536871552
 type = 6
 color = 3977148984
 should_update_from_elf = true
@@ -1455,12 +2090,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var109]
+[var120]
 name = steerRateFixdt
 tracked_name = steerRateFixdt
-address = 536871684
+address = 536871556
 type = 4
 color = 14142923
 should_update_from_elf = true
@@ -1468,12 +2107,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var110]
+[var121]
 name = timeoutFlgADC
 tracked_name = timeoutFlgADC
-address = 536871792
+address = 536871664
 type = 1
 color = 1686944480
 should_update_from_elf = true
@@ -1481,12 +2124,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var111]
+[var122]
 name = timeoutFlgGen
 tracked_name = timeoutFlgGen
-address = 536871624
+address = 536871504
 type = 1
 color = 3571435862
 should_update_from_elf = true
@@ -1494,12 +2141,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var112]
+[var123]
 name = timeoutFlgSerial
 tracked_name = timeoutFlgSerial
-address = 536871793
+address = 536871665
 type = 1
 color = 1113611510
 should_update_from_elf = true
@@ -1507,12 +2158,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var113]
+[var124]
 name = unf_VBUS
 tracked_name = unf_VBUS
-address = 536871848
+address = 536871720
 type = 4
 color = 3165119410
 should_update_from_elf = true
@@ -1520,12 +2175,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var114]
+[var125]
 name = ur
 tracked_name = ur
-address = 536871580
+address = 536871468
 type = 6
 color = 1185759673
 should_update_from_elf = true
@@ -1533,12 +2192,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var115]
+[var126]
 name = vr
 tracked_name = vr
-address = 536871584
+address = 536871472
 type = 6
 color = 1740093686
 should_update_from_elf = true
@@ -1546,12 +2209,16 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
-[var116]
+[var127]
 name = wr
 tracked_name = wr
-address = 536871588
+address = 536871476
 type = 6
 color = 422056667
 should_update_from_elf = true
@@ -1559,639 +2226,752 @@ shift = 0
 mask = 4294967295
 high_level_type = 0
 value_to_write = 0.000000
+secondary_value_to_write = 0.000000
 do_not_interpret_as_enum = false
+write_limits_enabled = false
+write_limit_min = -1.000000
+write_limit_max = 1.000000
 
 [group0]
-name = Brake
+name = Aligment
 acquisition_type = 0
 
 [group0-plot0]
 name = new plot0
 type = 0
 visibility = true
+secondary_write_enabled = false
 
 [group0-plot0-series0]
-name = I_BusR
+name = encoder_x.ENCODER_COUNT
 visibility = true
 format = DEC
 
 [group0-plot0-series1]
-name = adc_buffer.adc3.value.batt1
+name = encoder_x.emulated_mech_count
 visibility = true
 format = DEC
 
 [group0-plot0-series2]
-name = batVoltage
+name = rtU_Right.r_inpTgt
 visibility = true
 format = DEC
 
-[group0-plot0-series3]
-name = batVoltageCalib
+[group0-plot1]
+name = new table0
+type = 2
 visibility = true
-format = DEC
-
-[group0-plot0-series4]
-name = batVoltageFixdt
-visibility = false
-format = DEC
-
-[group0-plot0-series5]
-name = curR_DC
-visibility = true
-format = DEC
-
-[group0-plot0-series6]
-name = unf_VBUS
-visibility = true
-format = DEC
+secondary_write_enabled = false
 
 [group1]
-name = ESTOP
+name = Brake
 acquisition_type = 0
 
 [group1-plot0]
 name = new plot0
 type = 0
 visibility = true
+secondary_write_enabled = true
 
 [group1-plot0-series0]
-name = estop_change_tick
+name = I_BusR
 visibility = true
 format = DEC
 
 [group1-plot0-series1]
-name = estop_flag
-visibility = true
+name = adc_buffer.adc3.value.batt1
+visibility = false
 format = DEC
 
 [group1-plot0-series2]
-name = estop_latch_flag
-visibility = true
+name = batVoltage
+visibility = false
 format = DEC
 
 [group1-plot0-series3]
-name = estop_press_tick
-visibility = true
+name = batVoltageCalib
+visibility = false
 format = DEC
 
 [group1-plot0-series4]
-name = estop_sample_prev
-visibility = true
+name = batVoltageFixdt
+visibility = false
 format = DEC
 
 [group1-plot0-series5]
-name = estop_state
+name = curR_DC
+visibility = true
+format = DEC
+
+[group1-plot0-series6]
+name = unf_VBUS
 visibility = true
 format = DEC
 
 [group2]
-name = General
+name = ESTOP
 acquisition_type = 0
 
 [group2-plot0]
 name = new plot0
 type = 0
 visibility = true
+secondary_write_enabled = true
 
 [group2-plot0-series0]
-name = AHBPrescTable[0]
-visibility = false
+name = estop_change_tick
+visibility = true
 format = DEC
 
 [group2-plot0-series1]
-name = APBPrescTable[0]
-visibility = false
+name = estop_flag
+visibility = true
 format = DEC
 
 [group2-plot0-series2]
-name = HS_PWM
-visibility = false
+name = estop_latch_flag
+visibility = true
 format = DEC
 
 [group2-plot0-series3]
-name = I_BusR
-visibility = false
+name = estop_press_tick
+visibility = true
 format = DEC
 
 [group2-plot0-series4]
-name = SystemCoreClock
-visibility = false
+name = estop_sample_prev
+visibility = true
 format = DEC
 
 [group2-plot0-series5]
-name = adc_buffer.adc3.value.batt1
-visibility = false
-format = DEC
-
-[group2-plot0-series6]
-name = batVoltage
-visibility = false
-format = DEC
-
-[group2-plot0-series7]
-name = batVoltageCalib
-visibility = false
-format = DEC
-
-[group2-plot0-series8]
-name = ctrlModReq
-visibility = false
-format = DEC
-
-[group2-plot0-series9]
-name = ctrlModReqRaw
-visibility = false
-format = DEC
-
-[group2-plot0-series10]
-name = curL_DC
-visibility = false
-format = DEC
-
-[group2-plot0-series11]
-name = curR_DC
-visibility = false
-format = DEC
-
-[group2-plot0-series12]
-name = curR_phaB
-visibility = false
-format = DEC
-
-[group2-plot0-series13]
-name = curR_phaC
-visibility = false
-format = DEC
-
-[group2-plot0-series14]
-name = duty_scaled
-visibility = false
-format = DEC
-
-[group2-plot0-series15]
-name = duty_ticks
-visibility = false
-format = DEC
-
-[group2-plot0-series16]
-name = encoder_x.ENCODER_COUNT
-visibility = false
-format = DEC
-
-[group2-plot0-series17]
-name = encoder_x.ali
-visibility = false
-format = DEC
-
-[group2-plot0-series18]
-name = encoder_x.align_fault
-visibility = false
-format = DEC
-
-[group2-plot0-series19]
-name = encoder_x.align_ini_pos
-visibility = false
-format = DEC
-
-[group2-plot0-series20]
-name = encoder_x.aligned_count
-visibility = false
-format = DEC
-
-[group2-plot0-series21]
-name = encoder_x.emulated_mech_count
-visibility = false
-format = DEC
-
-[group2-plot0-series22]
-name = encoder_x.normalized
-visibility = false
-format = DEC
-
-[group2-plot0-series23]
-name = encoder_x.offset
-visibility = false
-format = DEC
-
-[group2-plot0-series24]
-name = hw_pwm_ready
-visibility = false
-format = DEC
-
-[group2-plot0-series25]
-name = input1[0].cmd
-visibility = false
-format = DEC
-
-[group2-plot0-series26]
-name = input1[0].raw
-visibility = false
-format = DEC
-
-[group2-plot0-series27]
-name = input2[0].cmd
-visibility = false
-format = DEC
-
-[group2-plot0-series28]
-name = input2[0].raw
-visibility = false
-format = DEC
-
-[group2-plot0-series29]
-name = period_ticks
-visibility = false
-format = DEC
-
-[group2-plot0-series30]
-name = pwm_captured_ch1_value
-visibility = false
-format = DEC
-
-[group2-plot0-series31]
-name = pwm_captured_ch2_value
-visibility = false
-format = DEC
-
-[group2-plot0-series32]
-name = pwm_res
-visibility = false
-format = DEC
-
-[group2-plot0-series33]
-name = pwml
-visibility = false
-format = DEC
-
-[group2-plot0-series34]
-name = pwmr
-visibility = false
-format = DEC
-
-[group2-plot0-series35]
-name = rtDW_Right.Merge
-visibility = false
-format = DEC
-
-[group2-plot0-series36]
-name = rtDW_Right.Merge1
-visibility = false
-format = DEC
-
-[group2-plot0-series37]
-name = rtDW_Right.Switch1
-visibility = false
-format = DEC
-
-[group2-plot0-series38]
-name = rtDW_Right.r_cos_M1_1
-visibility = false
-format = DEC
-
-[group2-plot0-series39]
-name = rtDW_Right.r_sin_M1_1
-visibility = false
-format = DEC
-
-[group2-plot0-series40]
-name = rtDW_Right.z_ctrlMod
-visibility = false
-format = DEC
-
-[group2-plot0-series41]
-name = rtP_Left.z_ctrlTypSel
-visibility = false
-format = DEC
-
-[group2-plot0-series42]
-name = rtP_Right.b_diagEna
-visibility = false
-format = DEC
-
-[group2-plot0-series43]
-name = rtP_Right.i_max
-visibility = false
-format = DEC
-
-[group2-plot0-series44]
-name = rtU_Left.a_mechAngle
-visibility = false
-format = DEC
-
-[group2-plot0-series45]
-name = rtU_Left.r_inpTgt
-visibility = false
-format = DEC
-
-[group2-plot0-series46]
-name = rtU_Right.a_mechAngle
-visibility = false
-format = DEC
-
-[group2-plot0-series47]
-name = rtU_Right.b_motEna
-visibility = false
-format = DEC
-
-[group2-plot0-series48]
-name = rtU_Right.r_inpTgt
-visibility = false
-format = DEC
-
-[group2-plot0-series49]
-name = rtU_Right.z_ctrlModReq
-visibility = false
-format = DEC
-
-[group2-plot0-series50]
-name = rtY_Left.a_elecAngle
-visibility = false
-format = DEC
-
-[group2-plot0-series51]
-name = rtY_Right.DC_phaA
-visibility = false
-format = DEC
-
-[group2-plot0-series52]
-name = rtY_Right.DC_phaB
-visibility = false
-format = DEC
-
-[group2-plot0-series53]
-name = rtY_Right.DC_phaC
-visibility = false
-format = DEC
-
-[group2-plot0-series54]
-name = rtY_Right.a_elecAngle
-visibility = false
-format = DEC
-
-[group2-plot0-series55]
-name = rtY_Right.id
-visibility = false
-format = DEC
-
-[group2-plot0-series56]
-name = rtY_Right.iq
-visibility = false
-format = DEC
-
-[group2-plot0-series57]
-name = rtY_Right.n_mot
-visibility = false
-format = DEC
-
-[group2-plot0-series58]
-name = speedAvg
-visibility = false
-format = DEC
-
-[group2-plot0-series59]
-name = speedAvgAbs
-visibility = false
-format = DEC
-
-[group2-plot0-series60]
-name = speedRateFixdt
-visibility = false
-format = DEC
-
-[group2-plot0-series61]
-name = steerFixdt
-visibility = false
-format = DEC
-
-[group2-plot0-series62]
-name = steerRateFixdt
-visibility = false
-format = DEC
-
-[group2-plot0-series63]
-name = ur
-visibility = true
-format = DEC
-
-[group2-plot0-series64]
-name = vr
-visibility = true
-format = DEC
-
-[group2-plot0-series65]
-name = wr
+name = estop_state
 visibility = true
 format = DEC
 
 [group3]
-name = PI
+name = General
 acquisition_type = 0
 
 [group3-plot0]
 name = new plot0
 type = 0
 visibility = true
+secondary_write_enabled = true
 
 [group3-plot0-series0]
-name = rtP_Left.cf_currFilt
-visibility = true
+name = AHBPrescTable[0]
+visibility = false
 format = DEC
 
 [group3-plot0-series1]
-name = rtP_Right.cf_currFilt
-visibility = true
+name = APBPrescTable[0]
+visibility = false
 format = DEC
 
 [group3-plot0-series2]
-name = rtP_Right.cf_idKi
-visibility = true
+name = HS_PWM
+visibility = false
 format = DEC
 
 [group3-plot0-series3]
-name = rtP_Right.cf_idKp
-visibility = true
+name = I_BusR
+visibility = false
 format = DEC
 
 [group3-plot0-series4]
-name = rtP_Right.cf_iqKi
-visibility = true
+name = SystemCoreClock
+visibility = false
 format = DEC
 
 [group3-plot0-series5]
-name = rtP_Right.cf_iqKp
+name = adc_buffer.adc3.value.batt1
+visibility = false
+format = DEC
+
+[group3-plot0-series6]
+name = batVoltage
+visibility = false
+format = DEC
+
+[group3-plot0-series7]
+name = batVoltageCalib
+visibility = false
+format = DEC
+
+[group3-plot0-series8]
+name = ctrlModReq
+visibility = false
+format = DEC
+
+[group3-plot0-series9]
+name = ctrlModReqRaw
+visibility = false
+format = DEC
+
+[group3-plot0-series10]
+name = curL_DC
+visibility = false
+format = DEC
+
+[group3-plot0-series11]
+name = curR_DC
+visibility = false
+format = DEC
+
+[group3-plot0-series12]
+name = curR_phaB
+visibility = false
+format = DEC
+
+[group3-plot0-series13]
+name = curR_phaC
+visibility = false
+format = DEC
+
+[group3-plot0-series14]
+name = duty_scaled
 visibility = true
 format = DEC
 
+[group3-plot0-series15]
+name = duty_ticks
+visibility = false
+format = DEC
+
+[group3-plot0-series16]
+name = encoder_x.ENCODER_COUNT
+visibility = false
+format = DEC
+
+[group3-plot0-series17]
+name = encoder_x.ali
+visibility = false
+format = DEC
+
+[group3-plot0-series18]
+name = encoder_x.align_fault
+visibility = false
+format = DEC
+
+[group3-plot0-series19]
+name = encoder_x.align_ini_pos
+visibility = false
+format = DEC
+
+[group3-plot0-series20]
+name = encoder_x.aligned_count
+visibility = false
+format = DEC
+
+[group3-plot0-series21]
+name = encoder_x.emulated_mech_count
+visibility = false
+format = DEC
+
+[group3-plot0-series22]
+name = encoder_x.normalized
+visibility = false
+format = DEC
+
+[group3-plot0-series23]
+name = encoder_x.offset
+visibility = false
+format = DEC
+
+[group3-plot0-series24]
+name = hw_pwm_ready
+visibility = false
+format = DEC
+
+[group3-plot0-series25]
+name = input1[0].cmd
+visibility = false
+format = DEC
+
+[group3-plot0-series26]
+name = input1[0].raw
+visibility = false
+format = DEC
+
+[group3-plot0-series27]
+name = input2[0].cmd
+visibility = false
+format = DEC
+
+[group3-plot0-series28]
+name = input2[0].raw
+visibility = false
+format = DEC
+
+[group3-plot0-series29]
+name = period_ticks
+visibility = false
+format = DEC
+
+[group3-plot0-series30]
+name = pwm_captured_ch1_value
+visibility = false
+format = DEC
+
+[group3-plot0-series31]
+name = pwm_captured_ch2_value
+visibility = true
+format = DEC
+
+[group3-plot0-series32]
+name = pwm_res
+visibility = false
+format = DEC
+
+[group3-plot0-series33]
+name = pwml
+visibility = false
+format = DEC
+
+[group3-plot0-series34]
+name = pwmr
+visibility = false
+format = DEC
+
+[group3-plot0-series35]
+name = rtDW_Right.Merge
+visibility = false
+format = DEC
+
+[group3-plot0-series36]
+name = rtDW_Right.Merge1
+visibility = false
+format = DEC
+
+[group3-plot0-series37]
+name = rtDW_Right.Switch1
+visibility = false
+format = DEC
+
+[group3-plot0-series38]
+name = rtDW_Right.r_cos_M1_1
+visibility = false
+format = DEC
+
+[group3-plot0-series39]
+name = rtDW_Right.r_sin_M1_1
+visibility = false
+format = DEC
+
+[group3-plot0-series40]
+name = rtDW_Right.z_ctrlMod
+visibility = false
+format = DEC
+
+[group3-plot0-series41]
+name = rtP_Left.z_ctrlTypSel
+visibility = false
+format = DEC
+
+[group3-plot0-series42]
+name = rtP_Right.b_diagEna
+visibility = false
+format = DEC
+
+[group3-plot0-series43]
+name = rtP_Right.i_max
+visibility = false
+format = DEC
+
+[group3-plot0-series44]
+name = rtU_Left.a_mechAngle
+visibility = false
+format = DEC
+
+[group3-plot0-series45]
+name = rtU_Left.r_inpTgt
+visibility = false
+format = DEC
+
+[group3-plot0-series46]
+name = rtU_Right.a_encoderCNT
+visibility = true
+format = DEC
+
+[group3-plot0-series47]
+name = rtU_Right.a_mechAngle
+visibility = false
+format = DEC
+
+[group3-plot0-series48]
+name = rtU_Right.b_motEna
+visibility = false
+format = DEC
+
+[group3-plot0-series49]
+name = rtU_Right.r_inpTgt
+visibility = true
+format = DEC
+
+[group3-plot0-series50]
+name = rtU_Right.z_ctrlModReq
+visibility = false
+format = DEC
+
+[group3-plot0-series51]
+name = rtY_Left.a_elecAngle
+visibility = false
+format = DEC
+
+[group3-plot0-series52]
+name = rtY_Right.DC_phaA
+visibility = false
+format = DEC
+
+[group3-plot0-series53]
+name = rtY_Right.DC_phaB
+visibility = false
+format = DEC
+
+[group3-plot0-series54]
+name = rtY_Right.DC_phaC
+visibility = false
+format = DEC
+
+[group3-plot0-series55]
+name = rtY_Right.a_elecAngle
+visibility = true
+format = DEC
+
+[group3-plot0-series56]
+name = rtY_Right.id
+visibility = true
+format = DEC
+
+[group3-plot0-series57]
+name = rtY_Right.iq
+visibility = true
+format = DEC
+
+[group3-plot0-series58]
+name = rtY_Right.n_mot
+visibility = false
+format = DEC
+
+[group3-plot0-series59]
+name = speedAvg
+visibility = false
+format = DEC
+
+[group3-plot0-series60]
+name = speedAvgAbs
+visibility = false
+format = DEC
+
+[group3-plot0-series61]
+name = speedRateFixdt
+visibility = false
+format = DEC
+
+[group3-plot0-series62]
+name = steerFixdt
+visibility = false
+format = DEC
+
+[group3-plot0-series63]
+name = steerRateFixdt
+visibility = false
+format = DEC
+
+[group3-plot0-series64]
+name = ur
+visibility = false
+format = DEC
+
+[group3-plot0-series65]
+name = vr
+visibility = false
+format = DEC
+
+[group3-plot0-series66]
+name = wr
+visibility = false
+format = DEC
+
 [group4]
-name = PWMIn
+name = PI
 acquisition_type = 0
 
 [group4-plot0]
 name = new plot0
 type = 0
 visibility = true
+secondary_write_enabled = true
 
 [group4-plot0-series0]
-name = input1[0].cmd
-visibility = false
+name = rtP_Left.cf_currFilt
+visibility = true
 format = DEC
 
 [group4-plot0-series1]
-name = input1[0].raw
-visibility = false
+name = rtP_Right.cf_currFilt
+visibility = true
 format = DEC
 
 [group4-plot0-series2]
-name = input2[0].cmd
-visibility = false
+name = rtP_Right.cf_idKi
+visibility = true
 format = DEC
 
 [group4-plot0-series3]
-name = input2[0].raw
-visibility = false
+name = rtP_Right.cf_idKp
+visibility = true
 format = DEC
 
 [group4-plot0-series4]
-name = pwm_captured_ch1_value
-visibility = false
+name = rtP_Right.cf_iqKi
+visibility = true
 format = DEC
 
 [group4-plot0-series5]
-name = pwm_captured_ch2_value
-visibility = false
-format = DEC
-
-[group4-plot0-series6]
-name = pwm_res
-visibility = false
-format = DEC
-
-[group4-plot0-series7]
-name = pwml
-visibility = false
-format = DEC
-
-[group4-plot0-series8]
-name = pwmr
-visibility = false
-format = DEC
-
-[group4-plot0-series9]
-name = rtU_Right.r_inpTgt
+name = rtP_Right.cf_iqKp
 visibility = true
 format = DEC
 
 [group5]
-name = Safety
+name = PWMIn
 acquisition_type = 0
 
 [group5-plot0]
 name = new plot0
 type = 0
 visibility = true
+secondary_write_enabled = true
 
 [group5-plot0-series0]
-name = dcLinkProtection
-visibility = true
+name = input1[0].cmd
+visibility = false
 format = DEC
 
 [group5-plot0-series1]
-name = enable
-visibility = true
+name = input1[0].raw
+visibility = false
 format = DEC
 
 [group5-plot0-series2]
-name = enableFin
-visibility = true
+name = input2[0].cmd
+visibility = false
 format = DEC
 
 [group5-plot0-series3]
-name = hadc1.ErrorCode
-visibility = true
+name = input2[0].raw
+visibility = false
 format = DEC
 
 [group5-plot0-series4]
-name = hadc2.ErrorCode
-visibility = true
+name = pwm_captured_ch1_value
+visibility = false
 format = DEC
 
 [group5-plot0-series5]
-name = overcurrent_fault_flag
-visibility = true
+name = pwm_captured_ch2_value
+visibility = false
 format = DEC
 
 [group5-plot0-series6]
-name = rtP_Right.b_diagEna
-visibility = true
+name = pwm_res
+visibility = false
 format = DEC
 
 [group5-plot0-series7]
-name = rtU_Right.b_motEna
-visibility = true
+name = pwml
+visibility = false
 format = DEC
 
 [group5-plot0-series8]
-name = rtY_Left.z_errCode
-visibility = true
+name = pwmr
+visibility = false
 format = DEC
 
 [group5-plot0-series9]
-name = rtY_Right.z_errCode
-visibility = true
-format = DEC
-
-[group5-plot0-series10]
-name = timeoutFlgADC
-visibility = true
-format = DEC
-
-[group5-plot0-series11]
-name = timeoutFlgGen
-visibility = true
-format = DEC
-
-[group5-plot0-series12]
-name = timeoutFlgSerial
+name = rtU_Right.r_inpTgt
 visibility = true
 format = DEC
 
 [group6]
-name = perf
+name = Safety
 acquisition_type = 0
 
 [group6-plot0]
 name = new plot0
 type = 0
 visibility = true
+secondary_write_enabled = true
 
 [group6-plot0-series0]
-name = perf_bldc_cycles_last
+name = dcLinkProtection
 visibility = true
 format = DEC
 
 [group6-plot0-series1]
-name = perf_bldc_cycles_max
+name = enable
 visibility = true
 format = DEC
 
 [group6-plot0-series2]
-name = perf_bldc_overrun_count
+name = enableFin
 visibility = true
 format = DEC
 
 [group6-plot0-series3]
-name = perf_bldc_overrun_latched
+name = hadc1.ErrorCode
 visibility = true
 format = DEC
 
 [group6-plot0-series4]
-name = perf_main_cycles_last
+name = hadc2.ErrorCode
 visibility = true
 format = DEC
 
 [group6-plot0-series5]
-name = perf_main_cycles_max
+name = overcurrent_fault_flag
 visibility = true
+format = DEC
+
+[group6-plot0-series6]
+name = rtP_Right.b_diagEna
+visibility = true
+format = DEC
+
+[group6-plot0-series7]
+name = rtU_Right.b_motEna
+visibility = true
+format = DEC
+
+[group6-plot0-series8]
+name = rtY_Left.z_errCode
+visibility = true
+format = DEC
+
+[group6-plot0-series9]
+name = rtY_Right.z_errCode
+visibility = true
+format = DEC
+
+[group6-plot0-series10]
+name = timeoutFlgADC
+visibility = true
+format = DEC
+
+[group6-plot0-series11]
+name = timeoutFlgGen
+visibility = true
+format = DEC
+
+[group6-plot0-series12]
+name = timeoutFlgSerial
+visibility = true
+format = DEC
+
+[group7]
+name = perf
+acquisition_type = 0
+
+[group7-plot0]
+name = new plot0
+type = 0
+visibility = true
+secondary_write_enabled = true
+
+[group7-plot0-series0]
+name = foc_cyc_avgL
+visibility = false
+format = DEC
+
+[group7-plot0-series1]
+name = foc_cyc_avgR
+visibility = true
+format = DEC
+
+[group7-plot0-series2]
+name = foc_cyc_bufL[0]
+visibility = false
+format = DEC
+
+[group7-plot0-series3]
+name = foc_cyc_bufR[0]
+visibility = true
+format = DEC
+
+[group7-plot0-series4]
+name = foc_cyc_cnt
+visibility = false
+format = DEC
+
+[group7-plot0-series5]
+name = foc_cyc_maxR
+visibility = false
+format = DEC
+
+[group7-plot0-series6]
+name = foc_cyc_minR
+visibility = false
+format = DEC
+
+[group7-plot0-series7]
+name = foc_cyc_sumL
+visibility = false
+format = DEC
+
+[group7-plot0-series8]
+name = foc_cyc_sumR
+visibility = true
+format = DEC
+
+[group7-plot0-series9]
+name = perf_bldc_cycles_last
+visibility = false
+format = DEC
+
+[group7-plot0-series10]
+name = perf_bldc_cycles_max
+visibility = false
+format = DEC
+
+[group7-plot0-series11]
+name = perf_bldc_overrun_count
+visibility = false
+format = DEC
+
+[group7-plot0-series12]
+name = perf_bldc_overrun_latched
+visibility = false
+format = DEC
+
+[group7-plot0-series13]
+name = perf_main_cycles_last
+visibility = false
+format = DEC
+
+[group7-plot0-series14]
+name = perf_main_cycles_max
+visibility = false
+format = DEC
+
+[group7-plot1]
+name = new plot1
+type = 1
+visibility = false
+secondary_write_enabled = false
+
+[group7-plot1-series0]
+name = foc_cyc_bufL[0]
+visibility = false
+format = DEC
+
+[group7-plot1-series1]
+name = foc_cyc_bufR[0]
+visibility = false
+format = DEC
+
+[group7-plot1-series2]
+name = foc_cyc_cnt
+visibility = false
 format = DEC
 
 [trace_plot0]
