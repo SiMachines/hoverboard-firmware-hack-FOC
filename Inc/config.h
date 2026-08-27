@@ -216,7 +216,9 @@
 //#define BEEPER_OFF
 //#define ENCODER_X
 //#define ENCODER_Y                         // 
-#define ANALOG_BUTTON                     // ANALOG BUTTON_PIN supports greater range of voltage levels.
+#if BOARD_VARIANT == 0
+  #define ANALOG_BUTTON                   // ANALOG BUTTON_PIN supports greater range of voltage levels. Only valid for BOARD_VARIANT 0 (button on PA1/ADC1). Variant 1 uses PB9 (no ADC), so the digital button path is used instead.
+#endif
 //#define HOCP                            // Tie PA6/PB12 hardware over-current signals into TIM1/TIM8 break inputs
 // #define STANDSTILL_HOLD_ENABLE          // [-] Flag to hold the position when standtill is reached. Only available and makes sense for VOLTAGE or TORQUE mode.
 // #define ELECTRIC_BRAKE_ENABLE           // [-] Flag to enable electric brake and replace the motor "freewheel" with a constant braking when the input torque request is 0. Only available and makes sense for TORQUE mode.
@@ -788,7 +790,7 @@
 #define N_MOT_MAX                1900            // [rpm] Maximum motor speed limit
 
 
-#define DC_LINK_WATCHDOG_ENABLE               //Disables the motor without warning incase of under or overvoltage, disable if using hoverboard as vehicle
+#define DC_LINK_WATCHDOG_ENABLE            //Disables the motor without warning incase of under or overvoltage, disable if using hoverboard as vehicle
 #define FIELD_WEAK_ENA           0         //0 for disabled
 //#define RC_PWM_RIGHT           0         // Use RC PWM as input on the RIGHT cable. (duty cycle mapped to 0 to -32767, 0, 32767) Number indicates priority for dual-input. Disable DEBUG_SERIAL_USART3!
 #define HW_PWM                   0         // Set to 0 or 1 depending on which motor you want to control also Use hw pwm pin PB5 on left side L_MTR_HALL_PHA  or could also be L_MTR_HALL_PHC 
