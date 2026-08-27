@@ -97,6 +97,12 @@ typedef struct {
   uint32_t power_ramp_timer;         // Timer for power ramping phases
   int32_t full_rotations;
   int32_t count_prev;
+  // Slope verification during alignment move-back (CPR sanity check)
+  int32_t slope_chk_start_total;    // real total count at start of check window
+  int32_t slope_chk_start_emul;     // emulated count at start of check window
+  int32_t slope_chk_prev_total;     // previous real total count for delta accumulation
+  int32_t slope_chk_real_movement;  // accumulated real encoder movement over window
+  uint32_t slope_chk_samples;       // number of samples taken in window
 } SensorState;
 #endif
 

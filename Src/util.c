@@ -782,6 +782,7 @@ void Encoder_X_Align_Start(void) {
   encoder_x.align_start_time = buzzerTimer;
   encoder_x.align_ini_pos = encoder_x_handle.Instance->CNT;
   encoder_x.align_total_ini_pos = get_x_TotalCount();
+  encoder_x.slope_chk_samples = 0;
     // Initialize simulation variables
   // Target movement: 2.0 electrical rotations during phase-1 move time.
   // Convert electrical rotations to mechanical counts and then to per-tick increment*1000:
@@ -820,6 +821,49 @@ void Encoder_X_Align(void) {
     }
 }
 
+// --- Encoder slope verification helpers (CPR sanity check) ---
+// Computes the signed shortest-path delta between two normalized counts.
+static int32_t wrapped_delta(int32_t from, int32_t to, int32_t cpr) {
+  int32_t d = to - from;
+  if (d > (cpr / 2)) d -= cpr;
+  if (d < -(cpr / 2)) d += cpr;
+  return d;
+}
+
+// Start a slope-check window at the beginning of the move-back phase.
+static void slope_check_start(SensorState *s, int32_t real_total, int32_t emul_count) {
+  s->slope_chk_start_total    = real_total;
+  s->slope_chk_start_emul     = emul_count;
+  s->slope_chk_prev_total     = real_total;
+  s->slope_chk_real_movement  = 0;
+  s->slope_chk_samples        = 0;
+}
+
+// Accumulate one real-encoder movement sample.
+static void slope_check_sample(SensorState *s, int32_t real_total) {
+  int32_t delta = real_total - s->slope_chk_prev_total;
+  s->slope_chk_real_movement += delta;
+  s->slope_chk_prev_total = real_total;
+  s->slope_chk_samples++;
+}
+
+// Verify that the real encoder slope matches the emulated slope within tolerance.
+// Returns true if OK (or if not enough samples were collected).
+static boolean_T slope_check_verify(SensorState *s, int32_t current_emul, int32_t cpr) {
+  if (s->slope_chk_samples < ENCODER_ALIGN_SLOPE_MIN_SAMPLES) {
+    return true; // Not enough samples to judge; do not fault.
+  }
+  int32_t emulated_movement = wrapped_delta(s->slope_chk_start_emul, current_emul, cpr);
+  int32_t real_movement     = s->slope_chk_real_movement;
+  if (emulated_movement == 0) {
+    return (real_movement == 0);
+  }
+  int64_t diff = (int64_t)real_movement - (int64_t)emulated_movement;
+  if (diff < 0) diff = -diff;
+  int64_t tol = ((int64_t)emulated_movement * ENCODER_ALIGN_SLOPE_TOL_PERCENT) / 100;
+  if (tol < 1) tol = 1;
+  return (diff <= tol);
+}
 
  void handle_x_rotation_phase(uint32_t elapsed_ticks, uint32_t ramp_ms, uint32_t move_ms, uint32_t current_time) {
     // Power control: ramp up, full speed, then ramp down
@@ -890,6 +934,10 @@ void Encoder_X_Align(void) {
     }
     // Stage B: Move emulated position back toward start
     else if (elapsed_ticks < move_ms) {
+        // Initialize slope check on first Stage B call
+        if (encoder_x.slope_chk_samples == 0) {
+            slope_check_start(&encoder_x, get_x_TotalCount(), encoder_x.emulated_mech_count);
+        }
         int32_t delta = encoder_x.align_zero_pos - encoder_x.align_ini_pos ;
     
     // Find shortest path (handle encoder wrap-around)
@@ -901,6 +949,8 @@ void Encoder_X_Align(void) {
         encoder_x.emulated_mech_count = normalize_x_encoder_count(encoder_x.emulated_mech_count);
 
         encoder_x.align_inpTgt = ALIGNMENT_X_POWER;
+        // Sample real encoder movement for slope verification
+        slope_check_sample(&encoder_x, get_x_TotalCount());
     }
     // Stage C: Final ramp down to zero and finish
     else if (elapsed_ticks >= move_ms) {
@@ -909,7 +959,14 @@ void Encoder_X_Align(void) {
             encoder_x.align_inpTgt = ALIGNMENT_X_POWER * (ramp_ms - final_ramp_time) / ramp_ms;
         } else {
             encoder_x.align_inpTgt = 0;
-            finalize_x_alignment();
+            // CPR sanity check: real encoder slope must match emulated slope during move-back
+            if (!slope_check_verify(&encoder_x, encoder_x.emulated_mech_count, ENCODER_X_CPR)) {
+                encoder_x.align_fault = true;
+                encoder_x.ali = false;
+                encoder_x.align_state = 0;
+            } else {
+                finalize_x_alignment();
+            }
         }
     }
 }
@@ -1054,6 +1111,7 @@ void Encoder_Y_Align_Start(void) {
   encoder_y.align_start_time = buzzerTimer;
   encoder_y.align_ini_pos = encoder_y_handle.Instance->CNT;
   encoder_y.align_total_ini_pos = get_y_TotalCount();
+  encoder_y.slope_chk_samples = 0;
     // Initialize simulation variables
   // Target movement: 2.0 electrical rotations during phase-1 move time.
   // Convert electrical rotations to mechanical counts and then to per-tick increment*1000:
@@ -1163,6 +1221,10 @@ void Encoder_Y_Align(void) {
     }
     // Stage B: Move emulated position back toward start
     else if (elapsed_ticks < move_ms) {
+        // Initialize slope check on first Stage B call
+        if (encoder_y.slope_chk_samples == 0) {
+            slope_check_start(&encoder_y, get_y_TotalCount(), encoder_y.emulated_mech_count);
+        }
         int32_t delta = encoder_y.align_zero_pos - encoder_y.align_ini_pos ;
     
     // Find shortest path (handle encoder wrap-around)
@@ -1174,6 +1236,8 @@ void Encoder_Y_Align(void) {
         encoder_y.emulated_mech_count = normalize_y_encoder_count(encoder_y.emulated_mech_count);
 
         encoder_y.align_inpTgt = ALIGNMENT_Y_POWER;
+        // Sample real encoder movement for slope verification
+        slope_check_sample(&encoder_y, get_y_TotalCount());
     }
     // Stage C: Final ramp down to zero and finish
     else if (elapsed_ticks >= move_ms) {
@@ -1182,7 +1246,14 @@ void Encoder_Y_Align(void) {
             encoder_y.align_inpTgt = ALIGNMENT_Y_POWER * (ramp_ms - final_ramp_time) / ramp_ms;
         } else {
             encoder_y.align_inpTgt = 0;
-            finalize_y_alignment();
+            // CPR sanity check: real encoder slope must match emulated slope during move-back
+            if (!slope_check_verify(&encoder_y, encoder_y.emulated_mech_count, ENCODER_Y_CPR)) {
+                encoder_y.align_fault = true;
+                encoder_y.ali = false;
+                encoder_y.align_state = 0;
+            } else {
+                finalize_y_alignment();
+            }
         }
     }
 }

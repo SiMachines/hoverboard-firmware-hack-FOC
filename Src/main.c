@@ -686,6 +686,9 @@ int main(void) {
     } else if (rtY_Left.z_errCode || rtY_Right.z_errCode) {                                           // 1 beep (low pitch): Motor error, disable motors
       enable = 0;
       beepCount(1, 24, 1);
+    } else if (encoder_alignment_faulted()) {                                                         // 6 beeps (low pitch): Encoder alignment fault (e.g. wrong CPR)
+      enable = 0;
+      beepCount(6, 24, 1);
     } else if (timeoutFlgADC) {                                                                       // 2 beeps (low pitch): ADC timeout
       beepCount(2, 24, 1);
     } else if (timeoutFlgSerial) {                                                                    // 3 beeps (low pitch): Serial timeout

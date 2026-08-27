@@ -927,6 +927,14 @@
 #ifdef ENCODER_CPR
 #define FRAC_CPR ((uint32_t)((1ULL << 32) / (ENCODER_CPR)))
 #endif
+
+/* Encoder alignment CPR sanity check (slope verification during move-back) */
+#ifndef ENCODER_ALIGN_SLOPE_TOL_PERCENT
+  #define ENCODER_ALIGN_SLOPE_TOL_PERCENT  15   // [%] Max allowed deviation between real and emulated encoder slope
+#endif
+#ifndef ENCODER_ALIGN_SLOPE_MIN_SAMPLES
+  #define ENCODER_ALIGN_SLOPE_MIN_SAMPLES  20   // Min samples before slope check is considered valid
+#endif
 /* ===================== Finalize PI gains after all variant overrides ===================== */
 #ifndef CFG_VBUS_V
 #define CFG_VBUS_V                ((float)(BAT_CELLS) * 4.0f)
